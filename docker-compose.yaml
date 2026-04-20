@@ -1,0 +1,36 @@
+services:
+  ai-app:
+    build: .
+    volumes:
+      - ./:/app
+    ports:
+      - 8501:8501
+    environment:
+      - LOCAL_BASE_URL
+      - REMOTE_BASE_URL
+      - LOCAL_MODEL_NAME
+      - REMOTE_MODEL_NAME
+      - OPENROUTER_API_KEY
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    healthcheck:
+      # Use the correct internal port 8080 for the health check
+      test: ["CMD", "curl", "-f", "http://llm:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s # Give time for the LLM to load
+    depends_on:
+      llm:
+        condition: service_healthy # Wait until the llm service is healthy
+  llm:
+    provider:
+      type: model
+      options:
+        model: ai/gemma3
+    healthcheck: # Add a healthcheck for the llm service itself
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 10s # Increased timeout
+      retries: 10
+      start_period: 60s # The LLM needs time to load
