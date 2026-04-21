@@ -100,3 +100,6 @@ logs/
 
 # Docker
 .docker/
+
+# Agents
+.agents
