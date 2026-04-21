@@ -49,7 +49,7 @@ graph TB
     end
 
     subgraph LLM["🤖 LLM Backend"]
-        L1["Local Model<br/><i>ai/gemma3 · llama.cpp</i>"]
+        L1["Local Model<br/><i>ai/devstral-small-2 · llama.cpp</i>"]
         L2["Cloud Model<br/><i>OpenRouter API</i>"]
     end
 
@@ -224,7 +224,7 @@ graph TD
         end
 
         subgraph LLM2["llm service (port 8080)"]
-            GEM["Docker Model Runner<br/>ai/gemma3"]
+            GEM["Docker Model Runner<br/>ai/devstral-small-2"]
         end
 
         subgraph DB2["db service (port 5432 / volume)"]

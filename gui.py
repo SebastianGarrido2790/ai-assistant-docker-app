@@ -1,16 +1,31 @@
+"""
+Streamlit Graphical User Interface for the AI Assistant.
+
+A lightweight frontend that communicates with the FastAPI backend
+microservice over HTTP. Maintains local session state for seamless UI
+rendering while relying on the backend for heavy lifting and long-term memory.
+
+Usage:
+    uv run streamlit run gui.py
+"""
+
 import streamlit as st
-from app import AIChatApp
+import requests
+import uuid
+import os
 
-# Initialize the AI chat app
-try:
-    app = AIChatApp()
-except Exception as e:
-    st.error(f"Failed to initialize application: {str(e)}. Please check configuration.")
-    st.stop()
+# Configuration: Backend API URL
+# In Docker, this will be http://backend:8000
+# Locally, it will fall back to http://localhost:8000
+BACKEND_URL = os.getenv("BACKEND_URL", "http://localhost:8000")
+API_URL = f"{BACKEND_URL}/v1/chat"
 
-##############################
-# GUI
-##############################
+# Initialize session state for memory
+if "session_id" not in st.session_state:
+    st.session_state.session_id = str(uuid.uuid4())
+
+if "messages" not in st.session_state:
+    st.session_state.messages = []
 
 st.title("AI Assistant with Memory")
 
@@ -18,10 +33,6 @@ st.title("AI Assistant with Memory")
 model_choice = st.checkbox(
     "Use cloud model (Think harder...)", value=False, key="model_choice"
 )
-
-# Initialize session state for messages
-if "messages" not in st.session_state:
-    st.session_state.messages = []
 
 # Display chat history
 for msg in st.session_state.messages:
@@ -32,28 +43,38 @@ for msg in st.session_state.messages:
 prompt = st.chat_input("Type your message...")
 
 if prompt:
-    try:
-        # Add user message to session state
-        st.session_state.messages.append({"role": "user", "content": prompt})
+    # Add user message to session state
+    st.session_state.messages.append({"role": "user", "content": prompt})
 
-        with st.chat_message("user"):
-            st.markdown(prompt)
+    with st.chat_message("user"):
+        st.markdown(prompt)
 
-        # Generate response
-        with st.spinner("Generating response..."):
-            response = app.process_message(prompt, model_choice)
+    # Generate response
+    with st.spinner("Generating response..."):
+        try:
+            payload = {
+                "prompt": prompt,
+                "use_cloud": model_choice,
+                "session_id": st.session_state.session_id,
+            }
+            res = requests.post(API_URL, json=payload)
+            res.raise_for_status()
 
-        # Add assistant response to session state
-        st.session_state.messages.append({"role": "assistant", "content": response})
+            data = res.json()
+            response = data.get("response", "Error: No response from API.")
 
-        with st.chat_message("assistant"):
-            st.markdown(response)
+        except Exception as e:
+            response = f"An error occurred while calling the API: {str(e)}. Make sure the FastAPI backend is running on port 8000."
 
-    except Exception as e:
-        st.error(
-            f"An error occurred while generating the response: {str(e)}. Please try again."
-        )
+    # Add assistant response to session state
+    st.session_state.messages.append({"role": "assistant", "content": response})
+
+    with st.chat_message("assistant"):
+        st.markdown(response)
 
 # Save conversation button
 if st.button("Save Conversation"):
-    app.save_conversation_history(st.session_state.messages)
+    # With LangGraph + SQLite Saver in the backend, history is already saved in sqlite.
+    st.success(
+        "Conversation is automatically persisted by the Agent Graph in checkpoints.sqlite!"
+    )

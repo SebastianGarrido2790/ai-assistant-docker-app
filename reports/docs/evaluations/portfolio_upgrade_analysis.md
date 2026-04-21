@@ -76,7 +76,7 @@ testpaths = ["tests"]
 
 Add: `.pre-commit-config.yaml`, `.env.example`, `src/py.typed`
 
-#### 1.3 — Harden the Dockerfile (Rule 6.1)
+#### 1.3 — Harden the Dockerfile
 the current Dockerfile has 4 production violations:
 - No multi-stage build → bloated image
 - `pip install uv` in an image that will be rebuilt constantly → slow
@@ -107,7 +107,7 @@ USER appuser
 
 **Goal:** Transform from a chat wrapper into a real, demonstrable agentic system.
 
-#### 2.1 — Introduce a Real Agent with Tools (Rule 1.2)
+#### 2.1 — Introduce a Real Agent with Tools
 
 Replace `ConversationChain` with a LangGraph `StateGraph` agent. Give the agent at least **3 deterministic tools** that showcase the Brain/Brawn divide:
 
@@ -119,7 +119,7 @@ Replace `ConversationChain` with a LangGraph `StateGraph` agent. Give the agent 
 
 Every tool MUST use a Pydantic `BaseModel` input schema and a Google-style docstring (the agent reads these to know when to call the tool).
 
-#### 2.2 — Three-Layer Memory Architecture (Rule 1.9)
+#### 2.2 — Three-Layer Memory Architecture
 
 This is the single most impressive upgrade you can make to this specific app:
 
@@ -131,7 +131,7 @@ This is the single most impressive upgrade you can make to this specific app:
 
 In the UI, add a **"What do you remember about me?"** demo button. This is a jaw-dropping live demo moment that makes the three-layer architecture tangible to a non-technical interviewer.
 
-#### 2.3 — Structured System Prompts (Rule 1.5)
+#### 2.3 — Structured System Prompts
 
 Move the system prompt out of the code entirely:
 
@@ -154,7 +154,7 @@ Load via `ConfigurationManager`. Version-control prompt changes the same way you
 
 **Goal:** Wrap the system in production-grade observability and CI/CD.
 
-#### 3.1 — FastAPI Decoupling (Rule 1.3 + Rule 6.3)
+#### 3.1 — FastAPI Decoupling
 
 Extract the agent into a `FastAPI` microservice. The Streamlit UI becomes a thin client:
 
@@ -172,7 +172,7 @@ Every endpoint needs:
 
 This makes the entire system diagrams-friendly and interview-ready.
 
-#### 3.2 — GitHub Actions CI/CD Pipeline (Rule 6.2)
+#### 3.2 — GitHub Actions CI/CD Pipeline
 
 Three-stage pipeline:
 
@@ -191,11 +191,11 @@ The badge on the README (`✅ CI passing`) is the first thing a recruiter sees.
 Replace `logging.basicConfig` with:
 - **Structured logging**: `structlog` or `loguru` with JSON output
 - **OpenTelemetry tracing**: Wrap every agent invocation and tool call in a span
-- **Token usage tracking**: Log `prompt_tokens`, `completion_tokens`, `latency_ms` per request — this is the AgentOps metric layer (Rule 2.7)
+- **Token usage tracking**: Log `prompt_tokens`, `completion_tokens`, `latency_ms` per request — this is the AgentOps metric layer.
 
 ---
 
-### 🔵 Phase 4 — Documentation as Portfolio Artifact (Rule 5.1)
+### 🔵 Phase 4 — Documentation as Portfolio Artifact
 
 **Goal:** The README and `reports/` directory become a technical interview cheat sheet.
 

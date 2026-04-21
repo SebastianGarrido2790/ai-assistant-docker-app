@@ -169,7 +169,7 @@ Streamlit UI  →  POST /v1/chat  →  FastAPI  →  LangGraph Agent
 |------------|---------|---------------------|
 | OpenRouter API | Cloud LLM backend | Fallback to local model; warn in UI |
 | Tavily API | Web search tool | Tool returns error string; agent continues without |
-| Docker Model Runner | Local LLM (ai/gemma3) | System degrades to cloud-only mode |
+| Docker Model Runner | Local LLM (ai/devstral-small-2) | System degrades to cloud-only mode |
 
 ### Technical Constraints
 - Python `>=3.12, <3.13` (pinned for determinism)
