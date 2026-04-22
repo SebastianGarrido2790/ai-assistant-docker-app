@@ -32,5 +32,19 @@ If you want to test the local model routing, you need to free up VRAM on your Wi
 *   **Local Routing (`ai/devstral-small-2`)**: **READY** (but limited by VRAM). The backend is configured to use the correct `model-runner.docker.internal` endpoint, so it will work automatically if your GPU memory is freed up.
 *   **Architecture**: The app is now a true "Hybrid AI" system, allowing you to switch between edge (local) and cloud computing seamlessly.
 
+### 🛠️ Backend Crash Recovery (Dependency Mismatch)
+
+If the backend fails to start with a `ModuleNotFoundError` (e.g., `No module named 'chromadb'`), it is likely because an old Docker volume is caching an outdated virtual environment.
+
+**Fix:**
+1.  Stop the containers and remove volumes:
+    ```bash
+    docker-compose down -v
+    ```
+2.  Rebuild and start:
+    ```bash
+    docker-compose up --build
+    ```
+
 ### 💡 Quick Tip for the Local Model:
 If you eventually want to see the local model in action, the `ai/devstral-small-2` model requires about **1.2GB to 1.5GB of free VRAM**. If you can reach that threshold (perhaps by temporarily disabling GPU acceleration in other apps), the same code will handle it without any further changes.

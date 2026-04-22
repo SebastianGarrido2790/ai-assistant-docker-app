@@ -39,21 +39,39 @@ for msg in st.session_state.messages:
     with st.chat_message(msg["role"]):
         st.markdown(msg["content"])
 
+# Demo Actions
+col1, col2 = st.columns(2)
+demo_prompt = None
+
+with col1:
+    if st.button("Save Conversation"):
+        st.success(
+            "Conversation is automatically persisted by the Agent Graph in checkpoints.sqlite!"
+        )
+
+with col2:
+    # This button forces the agent to query its vector store and fetch facts from long-term memory
+    if st.button("What do you remember about me?"):
+        demo_prompt = "Search your long-term memory. What do you remember about me?"
+
 # Chat input
 prompt = st.chat_input("Type your message...")
 
-if prompt:
+# Resolve active prompt
+active_prompt = prompt or demo_prompt
+
+if active_prompt:
     # Add user message to session state
-    st.session_state.messages.append({"role": "user", "content": prompt})
+    st.session_state.messages.append({"role": "user", "content": active_prompt})
 
     with st.chat_message("user"):
-        st.markdown(prompt)
+        st.markdown(active_prompt)
 
     # Generate response
     with st.spinner("Generating response..."):
         try:
             payload = {
-                "prompt": prompt,
+                "prompt": active_prompt,
                 "use_cloud": model_choice,
                 "session_id": st.session_state.session_id,
             }
@@ -71,10 +89,3 @@ if prompt:
 
     with st.chat_message("assistant"):
         st.markdown(response)
-
-# Save conversation button
-if st.button("Save Conversation"):
-    # With LangGraph + SQLite Saver in the backend, history is already saved in sqlite.
-    st.success(
-        "Conversation is automatically persisted by the Agent Graph in checkpoints.sqlite!"
-    )

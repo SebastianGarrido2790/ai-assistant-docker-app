@@ -5,3 +5,4 @@ __pycache__
 *.pyc
 app.log
 conversation_history.json
+chroma_db/

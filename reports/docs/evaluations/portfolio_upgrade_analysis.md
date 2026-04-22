@@ -29,7 +29,7 @@ The current app is a **well-intentioned prototype**, but it reads as a beginner-
 
 ## The North Star: What This Project *Should* Demonstrate
 
-To stand out to elite employers (staff-level ML engineers, AI architects, technical VPs), the project must prove you can:
+To stand out to elite employers (staff-level ML engineers, AI architects, technical VPs), the project must prove I can:
 
 1. **Design a real agentic system** — not just call an LLM API and display the output
 2. **Apply production engineering discipline** to AI — typing, testing, tracing, CI/CD
@@ -121,7 +121,7 @@ Every tool MUST use a Pydantic `BaseModel` input schema and a Google-style docst
 
 #### 2.2 — Three-Layer Memory Architecture
 
-This is the single most impressive upgrade you can make to this specific app:
+This is the single most impressive upgrade I will make to this specific app:
 
 | Layer | Implementation | Showcase |
 |---|---|---|
@@ -129,24 +129,23 @@ This is the single most impressive upgrade you can make to this specific app:
 | **Persistent** | SQLite/PostgreSQL session DB via `SqliteSaver`/`AsyncPostgresSaver` | Memory survives container restart |
 | **Long-term** | ChromaDB or pgvector — semantic search over past conversations | Agent recalls facts from 3 sessions ago |
 
-In the UI, add a **"What do you remember about me?"** demo button. This is a jaw-dropping live demo moment that makes the three-layer architecture tangible to a non-technical interviewer.
+In the UI, add a **"What do you remember about me?"** demo button. This is a live demo moment that makes the three-layer architecture tangible to a non-technical user.
 
 #### 2.3 — Structured System Prompts
 
-Move the system prompt out of the code entirely:
+Implement a **Prompt Registry** to eliminate "naked" prompts from the logic. Following the strict "No Naked Prompts" mandate, system prompts are versioned and separated into a dedicated registry.
 
-```yaml
-# config/prompts.yaml
-system_prompt:
-  version: "1.2.0"
-  template: |
-    You are a helpful AI assistant with persistent memory.
-    You have access to tools: {tool_names}.
-    Today's date is {current_date}.
-    Known user facts: {user_facts}
+```python
+# src/agents/prompts.py
+SYSTEM_PROMPT_V1 = """
+You are a helpful AI assistant with persistent memory.
+You have access to tools: {tool_names}.
+...
+"""
+ACTIVE_SYSTEM_PROMPT = SYSTEM_PROMPT_V1
 ```
 
-Load via `ConfigurationManager`. Version-control prompt changes the same way you version model artifacts.
+This ensures prompts are version-controlled alongside code and easily promotable through different development environments.
 
 ---
 

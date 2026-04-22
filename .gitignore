@@ -103,3 +103,6 @@ logs/
 
 # Agents
 .agents
+
+# ChromaDB
+chroma_db/
