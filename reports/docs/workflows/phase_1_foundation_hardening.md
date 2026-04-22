@@ -1,7 +1,7 @@
 # Phase 1 — Foundation Hardening: Technical Implementation
 
 > **Reference:** [`portfolio_upgrade_analysis.md` — Phase 1, L43–102](../evaluations/portfolio_upgrade_analysis.md)
-> **Status:** ✅ Complete — commit `058fdcc`
+> **Status:** ✅ Complete
 > **Goal:** Make the codebase defensible to a senior code reviewer.
 
 ---
