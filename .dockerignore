@@ -6,3 +6,6 @@ __pycache__
 app.log
 conversation_history.json
 chroma_db/
+checkpoints.sqlite
+logs/
+.pytest_cache

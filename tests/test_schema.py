@@ -7,6 +7,7 @@ correctly validate input data and handle default values or missing fields.
 
 import pytest
 from pydantic import ValidationError
+
 from src.entity.schema import ChatRequest, ChatResponse, HealthResponse
 
 
@@ -29,7 +30,7 @@ def test_chat_request_defaults():
 def test_chat_request_missing_prompt():
     """Should raise ValidationError if prompt is absent."""
     with pytest.raises(ValidationError):
-        ChatRequest(use_cloud=True)
+        ChatRequest(use_cloud=True)  # type: ignore
 
 
 def test_chat_response_valid():
@@ -41,5 +42,9 @@ def test_chat_response_valid():
 
 def test_health_response_valid():
     """Test that Health responses correctly assign to status."""
-    response = HealthResponse(status="ok")
-    assert response.status == "ok"
+    response = HealthResponse(
+        status="healthy", model="test-model", memory_backend="test-backend"
+    )
+    assert response.status == "healthy"
+    assert response.model == "test-model"
+    assert response.memory_backend == "test-backend"

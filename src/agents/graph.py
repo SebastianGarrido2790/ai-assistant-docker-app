@@ -64,17 +64,19 @@ def build_graph():
     ]
     tool_names = ", ".join([t.name for t in tools])
 
+    from pydantic import SecretStr
+
     # Initialize LLMs and bind tools
     llms = {
         "local": ChatOpenAI(
             model=config.local_model_name,
-            api_key="nope",
+            api_key=SecretStr("nope"),
             base_url=config.local_base_url,
             timeout=30,
         ).bind_tools(tools),
         "cloud": ChatOpenAI(
             model=config.remote_model_name,
-            api_key=config.openrouter_api_key or "sk-none",
+            api_key=SecretStr(config.openrouter_api_key or "sk-none"),
             base_url=config.remote_base_url,
             timeout=30,
         ).bind_tools(tools),
@@ -124,6 +126,3 @@ def build_graph():
     memory.setup()
 
     return builder.compile(checkpointer=memory)
-
-
-agent_graph = build_graph()

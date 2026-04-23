@@ -13,25 +13,39 @@ uv run pytest
 
 ---
 
-### **2. Manual Verification (Step-by-Step)**
+### **2. Launch the Full System**
 
-To see the app in action, you need to start both the **Backend API** and the **Frontend GUI**.
+The easiest way to start the system for local development is using the provided hybrid launcher. This script automatically handles dependency syncing, infrastructure health checks, and environment variable injection.
 
-#### **Step A: Start the FastAPI Backend**
+#### **Option A: The One-Click Launcher (Recommended)**
+Open a terminal in the project root and run:
+```powershell
+.\launch_system.bat
+```
+*   **What it does:**
+    1.  Stops conflicting Docker services.
+    2.  Syncs local dependencies via `uv`.
+    3.  Starts the local FastAPI backend (minimized window).
+    4.  Starts the Streamlit UI and opens your browser.
+*   **To Stop:** Close the minimized "AI-Assistant-API" window and press `Ctrl+C` in the launcher terminal.
+
+#### **Option B: Manual Verification (Step-by-Step)**
+If you need to debug specific services, you can start them manually.
+
+**Step A: Start the FastAPI Backend**
 Open a terminal and run:
 ```powershell
-uv run uvicorn src.api.app:app --reload --port 8000
+uv run --env-file .env uvicorn src.api.app:app --reload --port 8000
 ```
-*   **Check:** Go to `http://localhost:8000/v1/health` in your browser. You should see `{"status": "ok"}`.
-*   **Documentation:** You can also visit `http://localhost:8000/docs` to see the interactive Swagger UI for your API.
+*   **Check:** Go to `http://localhost:8000/v1/health` in your browser.
+*   **Initialization:** The logs should show `Initializing Agent Graph...` when Uvicorn starts.
 
-#### **Step B: Start the Streamlit Frontend**
-Open a **new** terminal (keep the backend running) and run:
+**Step B: Start the Streamlit Frontend**
+Open a **new** terminal and run:
 ```powershell
-uv run streamlit run gui.py
+uv run --env-file .env streamlit run gui.py
 ```
-*   **Check:** Your browser should open to the Streamlit UI. Try sending a message like "Hello!".
-*   **Memory Test:** Send a second message like "What is my name?" (after telling it your name) to verify the **LangGraph + SQLite** persistent memory is working.
+*   **Check:** Your browser should open to `http://localhost:8501`. Try sending a message.
 
 ---
 
@@ -43,6 +57,9 @@ If you want to test the production hardening we did:
 ```powershell
 docker-compose up --build
 ```
+> [!TIP]
+> If you encounter a `parent snapshot ... does not exist` error during build, run `docker builder prune -f` and try again with `docker-compose build --no-cache && docker-compose up`.
+
 This will build the new multi-stage image using the `appuser` and start the full stack (App + LLM Runner).
 
 The logs should show that both services have started successfully inside their containers:

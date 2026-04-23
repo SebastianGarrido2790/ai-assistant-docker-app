@@ -23,7 +23,8 @@ services:
       - 8501:8501
     environment:
       - BACKEND_URL=http://backend:8000
-    command: ["streamlit", "run", "gui.py", "--server.port=8501", "--server.address=0.0.0.0"]
+      - PYTHONPATH=/app
+    command: ["streamlit", "run", "src/ui/app.py", "--server.port=8501", "--server.address=0.0.0.0"]
     depends_on:
       - backend
   llm:

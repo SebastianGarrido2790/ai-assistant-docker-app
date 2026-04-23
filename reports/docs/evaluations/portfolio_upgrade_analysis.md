@@ -4,7 +4,7 @@
 
 ## What You Have Now (Honest Diagnosis)
 
-The current app is a **well-intentioned prototype**, but it reads as a beginner-to-intermediate project to a senior hiring panel. Here's a clinical breakdown:
+The current app is a **well-intentioned prototype**, but it reads as a beginner-to-intermediate project to a senior production-ready project. Here's a clinical breakdown:
 
 | Dimension | Current State | Elite Bar |
 |---|---|---|
@@ -149,7 +149,7 @@ This ensures prompts are version-controlled alongside code and easily promotable
 
 ---
 
-### 🟢 Phase 3 — Production Engineering Layer (What Separates Junior from Senior)
+### 🟢 Phase 3 — Production Engineering Layer (What Separates Prototypes from Production-Ready Systems)
 
 **Goal:** Wrap the system in production-grade observability and CI/CD.
 
@@ -183,14 +183,55 @@ jobs:
   docker-build:    # docker build + trivy scan (on push to main)
 ```
 
-The badge on the README (`✅ CI passing`) is the first thing a recruiter sees.
+The badge on the README (`✅ CI passing`) is the first thing a production-ready project should have, not only in terms of tests, but also in terms of security and code quality.
 
-#### 3.3 — Structured Observability
+#### 3.3 — Local Orchestration & Validation Tools
+
+To ensure a seamless transition between local development and CI execution, we implement Windows-native automation scripts that mirror the cloud pipeline:
+
+- **`validate_system.bat`**: A multi-pillar local health check that runs `ruff`, `pyright`, `pytest` (with coverage), and `docker build`. It even includes PowerShell-based TCP port verification to confirm service availability.
+- **`launch_system.bat`**: A one-click bootstrap script that synchronizes dependencies via `uv`, orchestrates the Docker environment, and automatically launches the dashboard in the browser.
+
+These scripts reduce "it works on my machine" friction and demonstrate a commitment to developer experience (DX).
+
+#### 3.4 — Structured Observability
 
 Replace `logging.basicConfig` with:
 - **Structured logging**: `structlog` or `loguru` with JSON output
 - **OpenTelemetry tracing**: Wrap every agent invocation and tool call in a span
 - **Token usage tracking**: Log `prompt_tokens`, `completion_tokens`, `latency_ms` per request — this is the AgentOps metric layer.
+
+#### 3.5 — UI Modularization & Premium Experience (PROD-FRONTEND)
+
+**Goal:** Evolve `gui.py` from a flat script into a modular, production-grade `src/ui/` package with a visual design that demonstrates front-end engineering maturity.
+
+**The Rule:** A monolithic `gui.py` beyond 200 lines is a direct violation of the Single Responsibility Principle and the `src/ui/` module mandate. Even before hitting that limit, splitting the UI into focused modules signals that you treat the frontend as a professional service, not an afterthought.
+
+**Target structure:**
+```
+src/ui/
+├── __init__.py
+├── client.py      ← All HTTP interaction with the FastAPI backend (data loader)
+├── styles.py      ← Centralized CSS design system (glassmorphism, typography, gradients)
+└── components.py  ← Reusable Streamlit UI components (chat bubbles, sidebar, buttons)
+```
+
+**What each module does:**
+
+| Module | Responsibility | Anti-pattern it eliminates |
+|---|---|---|
+| `client.py` | `requests.post`, error handling, response parsing | Raw HTTP code scattered in the render loop |
+| `styles.py` | CSS design system injected via `st.markdown` | Inline style strings duplicated across files |
+| `components.py` | `render_chat_message()`, `render_sidebar()`, etc. | Monolithic render logic mixed with business logic |
+
+**The "Rich Aesthetics" mandate:** The `gui.py` refactor is also the opportunity to elevate the visual design from a default Streamlit theme to a premium, portfolio-worthy UI. Target design signals:
+- **Glassmorphism card components** for the chat area
+- **Inter/Outfit** via Google Fonts for modern typography
+- **Vibrant gradient** header (indigo → purple) with subtle glow
+- **Micro-animations** on chat bubble entry
+- **Custom scrollbar** and consistent color token system
+
+The UI is the **first thing a recruiter or interviewer sees**. A visually striking chat interface signals design sensibility alongside engineering depth — a rare combination in MLOps portfolios.
 
 ---
 

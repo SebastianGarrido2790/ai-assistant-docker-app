@@ -27,7 +27,7 @@ def error_message_detail(error: Exception | str, error_detail: ModuleType) -> st
         file_name = "unknown"
         line_number = 0
 
-    error_message = f"Error occurred in python script: [{file_name}] line number: [{line_number}] error message: [{str(error)}]"
+    error_message = f"Error occurred in python script: [{file_name}] line number: [{line_number}] error message: [{error!s}]"
 
     return error_message
 

@@ -7,19 +7,32 @@ and type-safe inputs.
 """
 
 from pydantic import BaseModel, Field
-from typing import Optional
+
 
 class ChatRequest(BaseModel):
     """Schema for chat input requests."""
+
     prompt: str = Field(..., description="The user's prompt message.")
-    use_cloud: bool = Field(False, description="Whether to use the cloud model.")
-    session_id: Optional[str] = Field("default", description="Session ID for persisting memory.")
+    use_cloud: bool = Field(
+        default=False, description="Whether to use the cloud model."
+    )
+    session_id: str | None = Field(
+        default="default", description="Session ID for persisting memory."
+    )
+
 
 class ChatResponse(BaseModel):
     """Schema for chat output responses."""
+
     response: str = Field(..., description="The AI's generated response.")
-    model_used: str = Field(..., description="The model tier used ('local' or 'cloud').")
+    model_used: str = Field(
+        ..., description="The model tier used ('local' or 'cloud')."
+    )
+
 
 class HealthResponse(BaseModel):
     """Schema for API health endpoint."""
-    status: str = Field(..., description="Health status (e.g., 'ok').")
+
+    status: str = Field(..., description="Health status (e.g., 'healthy').")
+    model: str = Field(..., description="The configured primary model.")
+    memory_backend: str = Field(..., description="The configured memory backend.")

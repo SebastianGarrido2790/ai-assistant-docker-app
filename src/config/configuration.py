@@ -9,8 +9,9 @@ a structured AppConfig dataclass.
 import os
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
+
 import yaml
-from typing import Dict, Any
 
 from src.constants import PROJECT_ROOT
 
@@ -50,36 +51,44 @@ class ConfigurationManager:
         Returns:
             AppConfig: Frozen dataclass with final loaded configurations.
         """
-        config_data: Dict[str, Any] = {}
+        config_data: dict[str, Any] = {}
         if self.config_filepath.exists():
-            with open(self.config_filepath, "r", encoding="utf-8") as f:
+            with open(self.config_filepath, encoding="utf-8") as f:
                 config_data = yaml.safe_load(f) or {}
 
         # Resolve config from environment variables
-        # Priority: 
+        # Priority:
         # 1. Docker-injected variables (LLM_URL, LLM_MODEL) - Ground truth in Docker AI environments
         # 2. Explicit LOCAL_*/REMOTE_* variables
         # 3. YAML config defaults
         return AppConfig(
-            openrouter_api_key=os.environ.get(
-                "OPENROUTER_API_KEY", config_data.get("openrouter_api_key", "")
+            openrouter_api_key=str(
+                os.environ.get(
+                    "OPENROUTER_API_KEY", config_data.get("openrouter_api_key", "")
+                )
             ),
-            local_model_name=(
+            local_model_name=str(
                 os.environ.get("LLM_MODEL")
                 or os.environ.get("LOCAL_MODEL_NAME")
                 or config_data.get("local_model_name", "ai/devstral-small-2")
             ),
-            remote_model_name=os.environ.get(
-                "REMOTE_MODEL_NAME",
-                config_data.get("remote_model_name", "openai/gpt-oss-20b"),
+            remote_model_name=str(
+                os.environ.get(
+                    "REMOTE_MODEL_NAME",
+                    config_data.get("remote_model_name", "openai/gpt-oss-20b"),
+                )
             ),
-            local_base_url=(
+            local_base_url=str(
                 os.environ.get("LLM_URL")
                 or os.environ.get("LOCAL_BASE_URL")
-                or config_data.get("local_base_url", "http://llm:8080/engines/llama.cpp/v1")
+                or config_data.get(
+                    "local_base_url", "http://llm:8080/engines/llama.cpp/v1"
+                )
             ),
-            remote_base_url=os.environ.get(
-                "REMOTE_BASE_URL",
-                config_data.get("remote_base_url", "https://openrouter.ai/api/v1"),
+            remote_base_url=str(
+                os.environ.get(
+                    "REMOTE_BASE_URL",
+                    config_data.get("remote_base_url", "https://openrouter.ai/api/v1"),
+                )
             ),
         )

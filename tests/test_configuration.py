@@ -5,7 +5,6 @@ Verifies that application settings are correctly loaded from
 environment variables and YAML files with the appropriate precedence.
 """
 
-import pytest
 from src.config.configuration import ConfigurationManager
 
 
