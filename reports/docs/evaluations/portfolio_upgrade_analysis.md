@@ -169,7 +169,7 @@ Every endpoint needs:
 - `GET /v1/health` returning `{"status": "healthy", "model": "...", "memory_backend": "..."}`
 - Lifespan context manager for agent initialization (never inside handler)
 
-This makes the entire system diagrams-friendly and interview-ready.
+This makes the entire system diagrams-friendly.
 
 #### 3.2 — GitHub Actions CI/CD Pipeline
 
@@ -196,7 +196,7 @@ Replace `logging.basicConfig` with:
 
 ### 🔵 Phase 4 — Documentation as Portfolio Artifact
 
-**Goal:** The README and `reports/` directory become a technical interview cheat sheet.
+**Goal:** The README and `reports/` directory become a technical documentation.
 
 #### 4.1 — Architecture Document
 
@@ -219,7 +219,7 @@ graph LR
 Write `reports/docs/decisions/adr-001-langgraph-vs-langchain.md`:
 > *"We chose LangGraph over bare LangChain chains because it provides explicit state management, native HITL interrupt support, and time-travel debugging — critical for a persistent-memory agentic system."*
 
-**This single ADR document, shown in an interview, demonstrates systems-thinking maturity that 90% of ML candidates lack.**
+**This single ADR document, shown in a technical meeting, demonstrates systems-thinking maturity that 90% of ML candidates lack.**
 
 #### 4.3 — README Upgrade
 
@@ -255,7 +255,7 @@ Impact on Elite Employers vs. Effort Required:
 
 ---
 
-## The One Paragraph You Should Be Able to Say in an Interview
+## The One Paragraph You Should Be Able to Say in a Technical Meeting
 
 > *"This system demonstrates a production-grade agentic architecture: a LangGraph `StateGraph` orchestrates a multi-tool agent with three layers of memory — ephemeral in-session state, SQLite-backed persistent sessions across restarts, and a semantic ChromaDB vector store for long-term user fact retrieval. The agent is exposed via a versioned FastAPI microservice (`/v1/chat`), decoupled from the Streamlit UI, with OpenTelemetry tracing on every tool invocation. The full stack runs in a multi-stage Docker container, deployed via a three-stage GitHub Actions pipeline that enforces `pyright` type checking, 70% test coverage, and a Trivy container scan before any merge to main."*
 
