@@ -11,14 +11,14 @@ Usage:
 
 import streamlit as st
 
-from src.ui.styles import STYLES
 from src.ui.client import BackendClient
 from src.ui.components import (
+    add_message,
     initialize_session,
     render_chat_history,
     render_demo_actions,
-    add_message,
 )
+from src.ui.styles import STYLES
 
 # Apply global styles
 st.markdown(STYLES, unsafe_allow_html=True)
@@ -54,5 +54,5 @@ if active_prompt:
             use_cloud=model_choice,
             session_id=st.session_state.session_id,
         )
-        
+
     add_message("assistant", response)

@@ -1,15 +1,16 @@
 """
 Diagnostic utility to verify LLM connectivity and configuration.
 
-This script independently validates that the OpenRouter API key and model 
-settings are correctly loaded and functional outside of the main FastAPI 
+This script independently validates that the OpenRouter API key and model
+settings are correctly loaded and functional outside of the main FastAPI
 application context.
 """
 
 import asyncio
-from pydantic import SecretStr
-from langchain_openai import ChatOpenAI
+
 from langchain_core.messages import HumanMessage
+from langchain_openai import ChatOpenAI
+from pydantic import SecretStr
 
 from src.config.configuration import ConfigurationManager
 
@@ -18,8 +19,8 @@ async def main():
     """
     Execute a test invocation to the remote LLM provider.
 
-    Loads the current configuration via ConfigurationManager, initializes 
-    a ChatOpenAI instance, and attempts a basic 'Hello' prompt to verify 
+    Loads the current configuration via ConfigurationManager, initializes
+    a ChatOpenAI instance, and attempts a basic 'Hello' prompt to verify
     authentication and network connectivity.
     """
     config = ConfigurationManager().get_config()

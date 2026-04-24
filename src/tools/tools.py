@@ -67,7 +67,9 @@ def calculate_tool(expression: str) -> str:
     with tracer.start_as_current_span("calculate_tool") as span:
         span.set_attribute("tool.input", expression)
         # Restrict evaluation to basic math operations for safety
-        allowed_names = {k: v for k, v in math.__dict__.items() if not k.startswith("__")}
+        allowed_names = {
+            k: v for k, v in math.__dict__.items() if not k.startswith("__")
+        }
         allowed_names["abs"] = abs
         allowed_names["round"] = round
         try:

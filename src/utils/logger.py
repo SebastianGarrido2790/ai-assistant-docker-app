@@ -9,6 +9,7 @@ Usage:
 """
 
 import sys
+
 from loguru import logger
 
 from src.constants import LOGS_DIR

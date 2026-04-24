@@ -75,26 +75,29 @@ async def chat(request: ChatRequest):
         }
 
         user_message = HumanMessage(content=request.prompt)
-        
+
         with tracer.start_as_current_span("agent_invocation") as span:
             start_time = time.time()
-            
+
             result = app.state.agent_graph.invoke(
                 {"messages": [user_message]}, config=config
             )
-            
+
             latency_ms = (time.time() - start_time) * 1000
-            
+
             prompt_tokens = 0
             completion_tokens = 0
-            
+
             for msg in reversed(result["messages"]):
-                if hasattr(msg, "response_metadata") and "token_usage" in msg.response_metadata:
+                if (
+                    hasattr(msg, "response_metadata")
+                    and "token_usage" in msg.response_metadata
+                ):
                     usage = msg.response_metadata["token_usage"]
                     prompt_tokens += usage.get("prompt_tokens", 0)
                     completion_tokens += usage.get("completion_tokens", 0)
                     break
-            
+
             span.set_attribute("tokens.prompt", prompt_tokens)
             span.set_attribute("tokens.completion", completion_tokens)
             span.set_attribute("latency_ms", latency_ms)
@@ -105,9 +108,9 @@ async def chat(request: ChatRequest):
         logger.bind(
             prompt_tokens=prompt_tokens,
             completion_tokens=completion_tokens,
-            latency_ms=round(latency_ms, 2)
+            latency_ms=round(latency_ms, 2),
         ).info(f"Graph executed successfully, responding with {model_used} model")
-        
+
         return ChatResponse(response=final_message, model_used=model_used)
 
     except Exception as e:
