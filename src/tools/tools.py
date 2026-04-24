@@ -6,6 +6,7 @@ and deterministic execution (brawn).
 """
 
 import math
+import simpleeval
 
 from duckduckgo_search import DDGS
 from langchain_core.tools import tool
@@ -67,14 +68,23 @@ def calculate_tool(expression: str) -> str:
     with tracer.start_as_current_span("calculate_tool") as span:
         span.set_attribute("tool.input", expression)
         # Restrict evaluation to basic math operations for safety
-        allowed_names = {
-            k: v for k, v in math.__dict__.items() if not k.startswith("__")
+        functions = {
+            k: v for k, v in math.__dict__.items() if callable(v) and not k.startswith("__")
         }
-        allowed_names["abs"] = abs
-        allowed_names["round"] = round
+        functions["abs"] = abs
+        functions["round"] = round
+        
+        constants = {
+            k: v for k, v in math.__dict__.items() if not callable(v) and not k.startswith("__")
+        }
+        
         try:
-            # Use eval safely by restricting the scope
-            result = eval(expression, {"__builtins__": {}}, allowed_names)
+            # Use simple_eval for safe mathematical evaluation
+            result = simpleeval.simple_eval(
+                expression, 
+                functions=functions, 
+                names=constants
+            )
             output = str(result)
             span.set_attribute("tool.output", output)
             return output
