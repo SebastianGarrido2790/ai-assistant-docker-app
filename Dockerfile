@@ -11,7 +11,6 @@ RUN adduser --disabled-password appuser
 WORKDIR /app
 COPY --from=builder /app/.venv ./.venv
 COPY src/ ./src/
-COPY gui.py ./
 
 # Ensure the appuser can write the checkpoints.sqlite database
 RUN chown -R appuser:appuser /app
@@ -21,4 +20,4 @@ USER appuser
 # Set PATH to use the virtual environment
 ENV PATH="/app/.venv/bin:$PATH"
 
-CMD ["streamlit", "run", "gui.py", "--server.port=8501", "--server.address=0.0.0.0"]
+CMD ["streamlit", "run", "src/ui/app.py", "--server.port=8501", "--server.address=0.0.0.0"]
