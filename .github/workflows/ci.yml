@@ -7,19 +7,15 @@
 #   1. Static Code Quality      — ruff check + ruff format + pyright
 #   2. Logic & Coverage         — pytest ≥ 70% coverage
 #   3. Security & Container     — docker build + trivy scan
-#
-# DVC pipeline synchronisation and service health are environment-dependent
-# and run in the CD workflow against the deployed environment, not in CI
-# where no services are running.
 # =============================================================================
 
 name: CI Pipeline
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "master" ]
   pull_request:
-    branches: [ "main" ]
+    branches: [ "master" ]
 
 jobs:
   quality-gate:
@@ -67,7 +63,7 @@ jobs:
     name: Docker Build & Scan
     runs-on: ubuntu-latest
     needs: test
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
     steps:
       - uses: actions/checkout@v4
       - name: Build Docker Image
