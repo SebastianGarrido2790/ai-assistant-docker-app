@@ -7,6 +7,9 @@
 [![Docker](https://img.shields.io/badge/Docker-multi--stage-2496ED?logo=docker&logoColor=white)](https://www.docker.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-22c55e)](LICENSE.txt)
 
+> [IMPORTANT]
+> **CODEBASE HARDENING IN PROGRESS**: This repository is currently undergoing a "Production-Grade Hardening" phase. We are migrating tools to secure parsers, expanding OTel observability, and implementing a comprehensive agentic testing pyramid. See the [Codebase Review](reports/docs/evaluations/codebase_review.md) for the active roadmap.
+
 A production-grade agentic AI assistant built on **LangGraph**, **FastAPI**, and a **three-layer memory architecture**. The agent uses real tools (web search, calculator, document summarization, long-term memory), persists full conversation state to SQLite, and retrieves cross-session facts from a ChromaDB vector store all observable via OpenTelemetry tracing.
 
 ![AI Assistant with Persistent Memory](reports/figures/ai_assistant_with_memory.png)
