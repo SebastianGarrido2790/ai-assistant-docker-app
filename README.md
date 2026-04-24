@@ -74,7 +74,7 @@ Most LLM demos are wrappers around a single API call. This system is not. Each o
 
 ### 1. Memory that actually persists
 
-Three distinct memory scopes require three distinct implementations. Short-term context is held in `GraphState` using `add_messages` reducers. Session persistence across container restarts uses `SqliteSaver` keyed by `thread_id`. Cross-session semantic recall uses ChromaDB's HNSW index with `sentence-transformers` embeddings. These are not interchangeable — they serve different temporal scopes and failure modes.
+Three distinct memory scopes require three distinct implementations. Short-term context is held in `GraphState` using `add_messages` reducers. Session persistence across container restarts uses `SqliteSaver` keyed by `thread_id`. Cross-session semantic recall uses ChromaDB's HNSW index with `sentence-transformers` embeddings. These are not interchangeable; they serve different temporal scopes and failure modes.
 
 The hard part: ChromaDB's default embedding engine silently fails if `onnxruntime` is not pinned in `pyproject.toml`. Facts appear to save but are never written to the vector store. The fix requires both pinning the dependency *and* wiring a structured logger so the failure is observable.
 
@@ -92,7 +92,7 @@ A single chat turn may invoke two or three tools before returning a final respon
 
 ### 5. Reproducible Docker builds at development speed
 
-Docker invalidates the layer cache when any file in the `COPY` context changes. Copying the entire source directory before `uv sync` means every code edit forces a full dependency reinstall (~2 minutes). The multi-stage build copies only `pyproject.toml` + `uv.lock` first, then runs `uv sync --frozen`. Source code is copied in a later layer that does not invalidate the dependency cache — rebuilds with no dependency changes complete in seconds.
+Docker invalidates the layer cache when any file in the `COPY` context changes. Copying the entire source directory before `uv sync` means every code edit forces a full dependency reinstall (~2 minutes). The multi-stage build copies only `pyproject.toml` + `uv.lock` first, then runs `uv sync --frozen`. Source code is copied in a later layer that does not invalidate the dependency cache; this rebuilds with no dependency changes complete in seconds.
 
 ---
 
