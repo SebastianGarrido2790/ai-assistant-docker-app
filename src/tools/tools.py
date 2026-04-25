@@ -6,8 +6,8 @@ and deterministic execution (brawn).
 """
 
 import math
-import simpleeval
 
+import simpleeval
 from duckduckgo_search import DDGS
 from langchain_core.tools import tool
 from langchain_text_splitters import RecursiveCharacterTextSplitter
@@ -73,16 +73,16 @@ def calculate_tool(expression: str) -> str:
         }
         functions["abs"] = abs
         functions["round"] = round
-        
+
         constants = {
             k: v for k, v in math.__dict__.items() if not callable(v) and not k.startswith("__")
         }
-        
+
         try:
             # Use simple_eval for safe mathematical evaluation
             result = simpleeval.simple_eval(
-                expression, 
-                functions=functions, 
+                expression,
+                functions=functions,
                 names=constants
             )
             output = str(result)

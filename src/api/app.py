@@ -12,8 +12,9 @@ Usage:
 import time
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, HTTPException
+from fastapi import Depends, FastAPI, HTTPException, Security
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.security import APIKeyHeader
 from langchain_core.messages import HumanMessage
 
 from src.agents.graph import build_graph
@@ -24,10 +25,33 @@ from src.utils.telemetry import tracer
 
 logger = get_logger(__name__, headline="api")
 
+# Load configuration once at module level for middleware setup
+config_mgr = ConfigurationManager()
+config = config_mgr.get_config()
+
+API_KEY_HEADER = APIKeyHeader(name="X-API-Key", auto_error=False)
+
+
+async def verify_api_key(api_key: str = Security(API_KEY_HEADER)):
+    """
+    Verify the provided API key against the configured one.
+
+    Args:
+        api_key: The API key from the X-API-Key header.
+
+    Raises:
+        HTTPException: If the API key is missing or invalid.
+    """
+    if api_key != config.app_api_key:
+        raise HTTPException(status_code=403, detail="Invalid API Key.")
+
+    return api_key
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    logger.info("Initializing Agent Graph...")
+    logger.info("Initializing Agent Graph and Configuration State...")
+    app.state.config = config
     app.state.agent_graph = build_graph()
     logger.info("Agent Graph initialized.")
     yield
@@ -43,7 +67,7 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=config.allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -53,8 +77,7 @@ app.add_middleware(
 @app.get("/v1/health", response_model=HealthResponse)
 async def health_check():
     """Health check endpoint."""
-    config_mgr = ConfigurationManager()
-    config = config_mgr.get_config()
+    config = app.state.config
     return HealthResponse(
         status="healthy",
         model=config.remote_model_name,
@@ -62,7 +85,7 @@ async def health_check():
     )
 
 
-@app.post("/v1/chat", response_model=ChatResponse)
+@app.post("/v1/chat", response_model=ChatResponse, dependencies=[Depends(verify_api_key)])
 async def chat(request: ChatRequest):
     """Chat endpoint interacting with the LangGraph agent."""
     logger.info(f"Received chat request for session: {request.session_id}")

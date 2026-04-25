@@ -6,6 +6,8 @@ and ensure the downstream LLM processing pipeline receives validated
 and type-safe inputs.
 """
 
+import uuid
+
 from pydantic import BaseModel, Field
 
 
@@ -16,8 +18,9 @@ class ChatRequest(BaseModel):
     use_cloud: bool = Field(
         default=False, description="Whether to use the cloud model."
     )
-    session_id: str | None = Field(
-        default="default", description="Session ID for persisting memory."
+    session_id: str = Field(
+        default_factory=lambda: str(uuid.uuid4()),
+        description="Session ID for persisting memory.",
     )
 
 

@@ -17,7 +17,9 @@ from langchain_openai import ChatOpenAI
 from langgraph.checkpoint.sqlite import SqliteSaver
 from langgraph.graph import START, StateGraph
 from langgraph.graph.message import add_messages
+from langgraph.graph.state import CompiledStateGraph
 from langgraph.prebuilt import ToolNode, tools_condition
+from pydantic import SecretStr
 
 from src.agents.memory import search_memory
 from src.agents.prompts import ACTIVE_SYSTEM_PROMPT
@@ -38,7 +40,7 @@ class GraphState(TypedDict):
     messages: Annotated[list[BaseMessage], add_messages]
 
 
-def build_graph():
+def build_graph() -> CompiledStateGraph:
     """
     Constructs and compiles the conversational agent's directed graph.
 
@@ -64,8 +66,6 @@ def build_graph():
     ]
     tool_names = ", ".join([t.name for t in tools])
 
-    from pydantic import SecretStr
-
     # Initialize LLMs and bind tools
     llms = {
         "local": ChatOpenAI(
@@ -82,7 +82,7 @@ def build_graph():
         ).bind_tools(tools),
     }
 
-    def chat_node(state: GraphState, config: RunnableConfig):
+    def chat_node(state: GraphState, config: RunnableConfig) -> dict[str, list[BaseMessage]]:
         use_cloud = config.get("configurable", {}).get("use_cloud", False)
         llm = llms["cloud"] if use_cloud else llms["local"]
 

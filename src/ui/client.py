@@ -8,6 +8,7 @@ import requests
 
 BACKEND_URL = os.getenv("BACKEND_URL", "http://localhost:8000")
 API_URL = f"{BACKEND_URL}/v1/chat"
+APP_API_KEY = os.getenv("APP_API_KEY", "dev-key-1234")
 
 
 class BackendClient:
@@ -36,8 +37,9 @@ class BackendClient:
             "use_cloud": use_cloud,
             "session_id": session_id,
         }
+        headers = {"X-API-Key": APP_API_KEY}
         try:
-            res = requests.post(API_URL, json=payload)
+            res = requests.post(API_URL, json=payload, headers=headers)
             res.raise_for_status()
             data = res.json()
             return data.get("response", "Error: No response from API.")

@@ -25,6 +25,8 @@ class AppConfig:
     remote_model_name: str
     local_base_url: str
     remote_base_url: str
+    app_api_key: str
+    allowed_origins: list[str]
 
 
 class ConfigurationManager:
@@ -90,5 +92,15 @@ class ConfigurationManager:
                     "REMOTE_BASE_URL",
                     config_data.get("remote_base_url", "https://openrouter.ai/api/v1"),
                 )
+            ),
+            app_api_key=str(
+                os.environ.get(
+                    "APP_API_KEY", config_data.get("app_api_key", "dev-key-1234")
+                )
+            ),
+            allowed_origins=list(
+                os.environ.get("ALLOWED_ORIGINS", "").split(",")
+                if os.environ.get("ALLOWED_ORIGINS")
+                else config_data.get("allowed_origins", ["*"])
             ),
         )

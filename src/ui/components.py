@@ -7,7 +7,7 @@ import uuid
 import streamlit as st
 
 
-def initialize_session():
+def initialize_session() -> None:
     """
     Initializes the Streamlit session state for memory.
 
@@ -21,7 +21,7 @@ def initialize_session():
         st.session_state.messages = []
 
 
-def render_chat_history():
+def render_chat_history() -> None:
     """
     Renders the chat history from the session state.
 
@@ -59,7 +59,7 @@ def render_demo_actions() -> str | None:
     return demo_prompt
 
 
-def add_message(role: str, content: str):
+def add_message(role: str, content: str) -> None:
     """
     Adds a message to the session state and renders it to the screen.
 
