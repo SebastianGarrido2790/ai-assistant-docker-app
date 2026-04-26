@@ -24,7 +24,8 @@ def test_chat_request_defaults():
     request = ChatRequest(prompt="Just a prompt")
     assert request.prompt == "Just a prompt"
     assert request.use_cloud is False
-    assert request.session_id == "default"
+    assert isinstance(request.session_id, str)
+    assert len(request.session_id) == 36  # Length of a standard UUID string
 
 
 def test_chat_request_missing_prompt():

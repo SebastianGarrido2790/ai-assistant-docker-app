@@ -5,11 +5,7 @@ Verifies the persistence and retrieval of user facts from the
 ChromaDB-backed memory system.
 """
 
-import sys
-from pathlib import Path
 from unittest.mock import patch
-
-sys.path.append(str(Path(__file__).resolve().parent.parent))
 
 from src.agents.memory import save_memory, search_memory
 

@@ -10,7 +10,7 @@ Usage:
 
 import sys
 
-from loguru import Logger, logger
+from loguru import logger
 
 from src.constants import LOGS_DIR
 
@@ -36,7 +36,9 @@ logger.add(
 )
 
 
-def get_logger(name: str | None = None, headline: str | None = None) -> Logger:
+from typing import Any
+
+def get_logger(name: str | None = None, headline: str | None = None) -> Any:
     """
     Returns a configured loguru logger.
     Adds an optional headline section to separate logs per script.

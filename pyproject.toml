@@ -39,6 +39,7 @@ ignore = ["E501", "N818", "B018"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+pythonpath = ["."]
 
 [dependency-groups]
 dev = [

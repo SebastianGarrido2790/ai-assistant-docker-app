@@ -6,29 +6,21 @@ and chat endpoint interactions, mocking the underlying LangGraph
 agent execution with lifespan support.
 """
 
-import sys
-from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import pytest
 from fastapi.testclient import TestClient
-
-# Add project root to path for imports
-sys.path.append(str(Path(__file__).resolve().parent.parent))
 
 from src.api.app import app
 
 
 @pytest.fixture
-def client_and_mock():
-    """Fixture that mocks build_graph and returns a TestClient with lifespan support."""
-    with patch("src.api.app.build_graph") as mock_build:
-        mock_graph = MagicMock()
-        mock_build.return_value = mock_graph
-        with TestClient(app) as client:
-            # Re-ensure app.state has the mock in case lifespan set it differently
-            app.state.agent_graph = mock_graph
-            yield client, mock_graph
+def client_and_mock(patch_build_graph):
+    """Fixture that returns a TestClient with lifespan support and access to the mock graph."""
+    with TestClient(app) as client:
+        # App state agent_graph is already set in lifespan which calls build_graph
+        # which is patched by patch_build_graph.
+        yield client, patch_build_graph
 
 
 def test_health_check(client_and_mock):
@@ -56,7 +48,9 @@ def test_chat_endpoint_success(client_and_mock):
         "session_id": "session-123",
     }
 
-    response = client.post("/v1/chat", json=payload)
+    response = client.post(
+        "/v1/chat", json=payload, headers={"X-API-Key": "dev-key-1234"}
+    )
 
     assert response.status_code == 200
     assert response.json() == {"response": "Mocked AI response", "model_used": "local"}
@@ -69,6 +63,8 @@ def test_chat_endpoint_failure(client_and_mock):
 
     payload = {"prompt": "Hello test", "use_cloud": False, "session_id": "session"}
 
-    response = client.post("/v1/chat", json=payload)
+    response = client.post(
+        "/v1/chat", json=payload, headers={"X-API-Key": "dev-key-1234"}
+    )
     assert response.status_code == 500
     assert response.json() == {"detail": "Internal Server Error"}

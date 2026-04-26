@@ -5,11 +5,7 @@ Verifies the deterministic behavior of the mathematical, web search,
 and memory-related tools used by the AI assistant.
 """
 
-import sys
-from pathlib import Path
 from unittest.mock import MagicMock, patch
-
-sys.path.append(str(Path(__file__).resolve().parent.parent))
 
 from src.tools.tools import (
     calculate_tool,
