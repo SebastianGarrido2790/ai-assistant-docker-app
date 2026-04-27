@@ -69,21 +69,23 @@ def calculate_tool(expression: str) -> str:
         span.set_attribute("tool.input", expression)
         # Restrict evaluation to basic math operations for safety
         functions = {
-            k: v for k, v in math.__dict__.items() if callable(v) and not k.startswith("__")
+            k: v
+            for k, v in math.__dict__.items()
+            if callable(v) and not k.startswith("__")
         }
         functions["abs"] = abs
         functions["round"] = round
 
         constants = {
-            k: v for k, v in math.__dict__.items() if not callable(v) and not k.startswith("__")
+            k: v
+            for k, v in math.__dict__.items()
+            if not callable(v) and not k.startswith("__")
         }
 
         try:
             # Use simple_eval for safe mathematical evaluation
             result = simpleeval.simple_eval(
-                expression,
-                functions=functions,
-                names=constants
+                expression, functions=functions, names=constants
             )
             output = str(result)
             span.set_attribute("tool.output", output)

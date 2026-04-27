@@ -82,7 +82,9 @@ def build_graph() -> CompiledStateGraph:
         ).bind_tools(tools),
     }
 
-    def chat_node(state: GraphState, config: RunnableConfig) -> dict[str, list[BaseMessage]]:
+    def chat_node(
+        state: GraphState, config: RunnableConfig
+    ) -> dict[str, list[BaseMessage]]:
         use_cloud = config.get("configurable", {}).get("use_cloud", False)
         llm = llms["cloud"] if use_cloud else llms["local"]
 

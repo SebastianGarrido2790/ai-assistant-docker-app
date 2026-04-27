@@ -85,7 +85,9 @@ async def health_check():
     )
 
 
-@app.post("/v1/chat", response_model=ChatResponse, dependencies=[Depends(verify_api_key)])
+@app.post(
+    "/v1/chat", response_model=ChatResponse, dependencies=[Depends(verify_api_key)]
+)
 async def chat(request: ChatRequest):
     """Chat endpoint interacting with the LangGraph agent."""
     logger.info(f"Received chat request for session: {request.session_id}")

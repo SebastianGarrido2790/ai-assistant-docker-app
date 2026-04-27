@@ -9,6 +9,7 @@ Usage:
 """
 
 import sys
+from typing import Any
 
 from loguru import logger
 
@@ -35,8 +36,6 @@ logger.add(
     enqueue=True,
 )
 
-
-from typing import Any
 
 def get_logger(name: str | None = None, headline: str | None = None) -> Any:
     """

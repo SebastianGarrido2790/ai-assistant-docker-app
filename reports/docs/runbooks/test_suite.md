@@ -66,15 +66,19 @@ This document describes the project's unit testing strategy, establishing the fi
 | `test_search_web_tool` | `search_web_tool` | Correctly parses and formats DuckDuckGo search results. |
 | `test_save_memory_tool` | `save_memory_tool` | Reports success/failure of fact persistence correctly. |
 
-### 3.6 `tests/test_memory.py` — Long-Term Memory
-**Purpose:** Validates the persistence and retrieval of user facts from the vector store.
+### 3.7 `tests/test_ui.py` — UI Layer
+**Purpose:** Validates the Streamlit frontend logic, session initialization, and backend client communication.
 
 | Test | Component Tested | What It Proves |
 |---|---|---|
-| `test_save_memory` | `save_memory` | Facts are correctly passed to the vector collection for persistence. |
-| `test_search_memory` | `search_memory` | Semantic search handles empty states and returns results correctly. |
+| `test_send_chat_message_success` | `BackendClient` | Successful payload delivery and response parsing from the API. |
+| `test_send_chat_message_error` | `BackendClient` | Graceful handling of connection errors or API failures. |
+| `test_initialize_session_new` | `initialize_session` | Correct creation of `session_id` (UUID) and `messages` list on first run. |
+| `test_initialize_session_existing` | `initialize_session` | Idempotency — ensures existing sessions are not overwritten. |
+| `test_render_demo_actions_no_click` | `render_demo_actions` | Returns `None` when no demo button is interacted with. |
+| `test_render_demo_actions_memory_click` | `render_demo_actions` | Returns the correct search prompt when the memory demo is triggered. |
 
-### 3.7 `tests/conftest.py` — Test Infrastructure
+### 3.8 `tests/conftest.py` — Test Infrastructure
 **Purpose:** Centralizes shared fixtures and mocks to ensure tests are fast and isolated.
 
 - **Mock Agent Graph:** Prevents real LLM calls and DB side effects.
@@ -105,17 +109,19 @@ uv run pytest -v
 | `tests/test_memory.py` | 2 | 0 | **PASS** ✅ |
 | `tests/test_schema.py` | 5 | 0 | **PASS** ✅ |
 | `tests/test_tools.py` | 5 | 0 | **PASS** ✅ |
-| **TOTAL** | **19** | **0** | **PASS** ✅ |
+| `tests/test_ui.py` | 6 | 0 | **PASS** ✅ |
+| **TOTAL** | **25** | **0** | **PASS** ✅ |
 
 ```
-tests\test_api.py ...                                                    [ 15%]
-tests\test_configuration.py ..                                           [ 26%]
-tests\test_exceptions.py ..                                              [ 36%]
-tests\test_memory.py ..                                                  [ 47%]
-tests\test_schema.py .....                                               [ 73%]
-tests\test_tools.py .....                                                [100%]
+tests\test_api.py ...                                                    [ 12%]
+tests\test_configuration.py ..                                           [ 20%]
+tests\test_exceptions.py ..                                              [ 28%]
+tests\test_memory.py ..                                                  [ 36%]
+tests\test_schema.py .....                                               [ 56%]
+tests\test_tools.py .....                                                [ 76%]
+tests\test_ui.py ......                                                  [100%]
 
-============================= 19 passed in 12.31s =============================
+============================== 25 passed in 0.50s =============================
 ```
 
 ---
