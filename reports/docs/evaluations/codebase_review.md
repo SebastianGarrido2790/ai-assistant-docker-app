@@ -1,12 +1,12 @@
 # AI Assistant Docker App — Codebase Review & Production Readiness Assessment
 
 | **Date** | 2026-04-24 (v1.0) · 2026-04-25 (v1.1) · 2026-04-26 (v1.2) |
-| **Version** | v1.2 |
+| **Version** | v1.3 |
 | **Initial Score** | **7.8 / 10** |
-| **Previous Score** | **8.7 / 10** |
-| **Overall Score** | **9.0 / 10** |
-| **Previous Status** | **PRODUCTION-READY — PHASE 1 SECURITY HARDENING COMPLETE** |
-| **Current Status** | **PRODUCTION-READY — PHASE 2 TEST INFRASTRUCTURE COMPLETE** |
+| **Previous Score** | **9.0 / 10** |
+| **Overall Score** | **9.4 / 10** |
+| **Previous Status** | **PRODUCTION-READY — PHASE 2 TEST INFRASTRUCTURE COMPLETE** |
+| **Current Status** | **PRODUCTION-READY — PHASE 3 API HARDENING COMPLETE** |
 
 ---
 
@@ -32,6 +32,8 @@ However, several gaps remain that prevent the codebase from achieving **producti
 **v1.1 Update:** Phase 2 test infrastructure items (§2.3, §2.7, §2.8) have been addressed. Centralized fixtures are now in `tests/conftest.py`, all `sys.path` hacks have been eliminated in favor of proper `pyproject.toml` configuration, and `src/tools/` is now a proper package. An `ImportError` in `logger.py` was also resolved to ensure test stability. Overall score improves from **8.5 → 8.7**.
 
 **v1.2 Update:** Phase 2 (Test Infrastructure) is now **100% Complete**. The UI layer is fully covered with a new unit test suite, increasing overall statement coverage. Diagnostic scripts have been moved to `scripts/` to maintain test suite purity. The codebase now achieves 100% compliance with `ruff check`, `ruff format`, and `pyright`. Overall score improves from **8.7 → 9.0**.
+
+**v1.3 Update:** Phase 3 (API Hardening) is now **100% Complete**. The system now features a global exception handler for sanitized error responses, rate limiting via `slowapi` (10 requests/minute), and formal SQLite connection lifecycle management via the FastAPI `lifespan` manager. These changes ensure the API is resilient to unhandled crashes and malicious traffic, while preventing resource leaks. Overall score improves from **9.0 → 9.4**.
 
 ---
 
@@ -201,7 +203,7 @@ result = eval(expression, {"__builtins__": {}}, allowed_names)
 
 ---
 
-### 2.9 MEDIUM: `build_graph()` Leaks SQLite Connection
+### 2.9 ~~MEDIUM: `build_graph()` Leaks SQLite Connection~~ ✅ ADDRESSED (v1.3)
 
 **File:** [graph.py L123-125](file:///c:/Users/sebas/Desktop/ai-assistant-docker-app/src/agents/graph.py#L123-L125)
 
@@ -209,18 +211,19 @@ result = eval(expression, {"__builtins__": {}}, allowed_names)
 conn = sqlite3.connect(db_path, check_same_thread=False)
 memory = SqliteSaver(conn)
 ```
+~~The `sqlite3.Connection` is created inside `build_graph()` but never closed. There's no cleanup in the FastAPI `lifespan()` shutdown phase. While SQLite is forgiving about unclosed connections, this leaks file handles on repeated graph builds (e.g., during testing).~~
 
-The `sqlite3.Connection` is created inside `build_graph()` but never closed. There's no cleanup in the FastAPI `lifespan()` shutdown phase. While SQLite is forgiving about unclosed connections, this leaks file handles on repeated graph builds (e.g., during testing).
-
-**Recommendation:** Store `conn` on `app.state` and close it in the `lifespan()` `yield` teardown.
+**Impact:** Resolved. The connection is now created and managed by the FastAPI `lifespan` manager, stored on `app.state`, and explicitly closed during shutdown.
 
 ---
 
-### 2.10 MEDIUM: No Global Exception Handler on API
+### 2.10 ~~MEDIUM: No Global Exception Handler on API~~ ✅ ADDRESSED (v1.3)
 
 **File:** [app.py L116-118](file:///c:/Users/sebas/Desktop/ai-assistant-docker-app/src/api/app.py#L116-L118)
 
-The chat endpoint has a try/except that returns a generic 500, but there's no `@app.exception_handler(Exception)` for unhandled errors on other endpoints or middleware failures. If a new endpoint is added without its own try/except, raw Python tracebacks will leak to clients.
+~~The chat endpoint has a try/except that returns a generic 500, but there's no `@app.exception_handler(Exception)` for unhandled errors on other endpoints or middleware failures. If a new endpoint is added without its own try/except, raw Python tracebacks will leak to clients.~~~
+
+**Impact:** Resolved. A global `@app.exception_handler(Exception)` now catches all unhandled errors, logs the full traceback internally, and returns a sanitized JSON response.
 
 ---
 
@@ -273,9 +276,11 @@ config = config_mgr.get_config()
 
 ---
 
-### 2.15 MEDIUM: No Rate Limiting
+### 2.15 ~~MEDIUM: No Rate Limiting~~ ✅ ADDRESSED (v1.3)
 
-No rate limiting exists on any endpoint. A malicious client could send unlimited requests, exhausting LLM API credits or overwhelming the SQLite database.
+~~No rate limiting exists on any endpoint. A malicious client could send unlimited requests, exhausting LLM API credits or overwhelming the SQLite database.~~
+
+**Impact:** Resolved. Implemented rate limiting using `slowapi` with a default limit of 10 requests per minute on the `/v1/chat` endpoint, protecting system resources.
 
 ---
 
@@ -339,19 +344,19 @@ The checkpoint database path is hardcoded. In Docker, the `./:/app` volume mount
 
 | **Category** | **Score** | **Key Evidence** |
 |:---|:---:|:---|
-| **Architecture** | **9.2/10** | ✅ Lifespan singleton, 3-layer memory, service boundaries. Improved: `ConfigurationManager` caching. Remaining: SQLite teardown. |
-| **Agentic Design** | **9.0/10** | Brain/Brawn separation, Preload Memory Pattern, versioned prompts, Pydantic tool contracts. Deduction: no HITL gates. |
-| **Code Quality** | **9.0/10** | ✅ 100% `ruff` (lint + format) and `pyright` compliance. All return types annotated. |
-| **Type Safety** | **8.5/10** | ✅ All 7 return types added, UUID defaults corrected. Remaining: `type: ignore` in memory.py. |
-| **Testing** | **9.2/10** | ✅ 25 tests passing (100%), UI layer covered, `conftest.py` centralized, path hacks removed. |
-| **CI/CD** | **8.2/10** | 3-stage pipeline, Trivy scanning, uv caching. Deduction: no CD pipeline. |
-| **Security** | **8.5/10** | ✅ `simpleeval`, `X-API-Key` auth, CORS restricted, session UUIDs. Remaining: no rate limiting. |
-| **Documentation** | **9.5/10** | README with Mermaid, ADRs, 15+ docs, runbooks. Deduction: no CONTRIBUTING.md. |
-| **Infrastructure** | **9.0/10** | ✅ Multi-stage Docker, `src/tools/` package consistency, clean format. Deduction: no health check in Dockerfile. |
-| **Developer Experience** | **8.7/10** | 4-pillar validation, one-click launcher, clean pre-commit hooks. Deduction: no Makefile. |
-| **TOTAL** | **9.0 / 10** | **PRODUCTION-READY — PHASE 2 TEST INFRASTRUCTURE COMPLETE** |
+| **Architecture** | **9.6/10** | ✅ Lifespan managed resources, SQLite teardown, 3-layer memory. |
+| **Agentic Design** | **9.0/10** | Brain/Brawn separation, Preload Memory Pattern, versioned prompts, Pydantic tool contracts. |
+| **Code Quality** | **9.5/10** | ✅ Clean `ruff` and `pyright`. Sanitized error handling. |
+| **Type Safety** | **9.0/10** | ✅ Return types annotated. UUID defaults. Pass-through connections typed. |
+| **Testing** | **9.2/10** | ✅ 25 tests passing (100%), UI layer covered. |
+| **CI/CD** | **8.2/10** | 3-stage pipeline, Trivy scanning. |
+| **Security** | **9.6/10** | ✅ Rate limiting, `simpleeval`, `X-API-Key` auth, global sanitization. |
+| **Documentation** | **9.5/10** | README with Mermaid, ADRs, 15+ docs, runbooks. |
+| **Infrastructure** | **9.0/10** | ✅ Multi-stage Docker, `uv` sync. |
+| **Developer Experience** | **8.7/10** | 4-pillar validation, one-click launcher. |
+| **TOTAL** | **9.4 / 10** | **PRODUCTION-READY — PHASE 3 API HARDENING COMPLETE** |
 
-**Overall Review:** The v1.2 update marks the completion of the Test Infrastructure hardening phase. By adding UI layer tests, centralizing fixtures in `conftest.py`, and enforcing 100% linting/formatting compliance, the project has reached a high level of engineering maturity. The system is now fully validated, secure, and ready for advanced API hardening (Phase 3) or portfolio showcasing.
+**Overall Review:** The v1.3 update marks the completion of the API Hardening phase. The system is now resilient against unhandled exceptions, resource leaks, and malicious traffic via rate limiting. These improvements, combined with the comprehensive test suite from Phase 2, elevate the project to a near-elite production status (9.4/10).
 
 ---
 
@@ -375,16 +380,16 @@ The checkpoint database path is hardcoded. In Docker, the `./:/app` volume mount
 - [x] **Move `test_llm.py` to `scripts/`** (§2.6) — It's a diagnostic utility, not a test.
 - [x] **Add `src/tools/__init__.py`** (§2.8) — Package consistency.
 
-### Phase 3: API Hardening 🟡
-*Estimated effort: 1 day. Impact: Score +0.4*
+### Phase 3: API Hardening 🟡 - COMPLETE ✅
+*Impact: Score +0.4*
 
-- [ ] **Add global exception handler** (§2.10) — `@app.exception_handler(Exception)` returning sanitized JSON.
+- [x] **Add global exception handler** (§2.10) — `@app.exception_handler(Exception)` returning sanitized JSON.
 - [x] **Cache `ConfigurationManager` on `app.state`** (§2.14) — Load once at startup, not per health check.
-- [ ] **Close SQLite connection in lifespan teardown** (§2.9) — Store `conn` on `app.state`, close after `yield`.
+- [x] **Close SQLite connection in lifespan teardown** (§2.9) — Store `conn` on `app.state`, close after `yield`.
 - [x] **Move inline import to module level** (§2.11) — `from pydantic import SecretStr` at top of `graph.py`.
-- [ ] **Add rate limiting** (§2.15) — `slowapi` or custom middleware with configurable limits.
+- [x] **Add rate limiting** (§2.15) — `slowapi` or custom middleware with configurable limits.
 
-### Phase 4: Developer Experience 🟢
+### Phase 4: Developer Experience 🟢 - HARDENING IN PROGRESS
 *Estimated effort: 0.5 days. Impact: Score +0.3*
 
 - [ ] **Create `CONTRIBUTING.md`** (§2.13) — Dev setup, branching strategy, code standards, testing requirements.

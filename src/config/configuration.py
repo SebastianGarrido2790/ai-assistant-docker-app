@@ -12,8 +12,14 @@ from pathlib import Path
 from typing import Any
 
 import yaml
+from dotenv import load_dotenv
 
 from src.constants import PROJECT_ROOT
+
+# Load environment variables from .env file if it exists
+# We use override=True to ensure .env settings take precedence over potentially
+# corrupted session-level environment variables.
+load_dotenv(PROJECT_ROOT / ".env", override=True)
 
 
 @dataclass(frozen=True)

@@ -26,6 +26,8 @@ dependencies = [
     "urllib3>=2.6.3",
     "protobuf>=5.29.1",
     "simpleeval>=1.0.7",
+    "slowapi>=0.1.9",
+    "python-dotenv>=1.2.2",
 ]
 requires-python = ">=3.12, <3.13"
 

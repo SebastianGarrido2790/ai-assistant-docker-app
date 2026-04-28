@@ -17,7 +17,7 @@ from src.api.app import app
 @pytest.fixture
 def client_and_mock(patch_build_graph):
     """Fixture that returns a TestClient with lifespan support and access to the mock graph."""
-    with TestClient(app) as client:
+    with TestClient(app, raise_server_exceptions=False) as client:
         # App state agent_graph is already set in lifespan which calls build_graph
         # which is patched by patch_build_graph.
         yield client, patch_build_graph
@@ -67,4 +67,6 @@ def test_chat_endpoint_failure(client_and_mock):
         "/v1/chat", json=payload, headers={"X-API-Key": "dev-key-1234"}
     )
     assert response.status_code == 500
-    assert response.json() == {"detail": "Internal Server Error"}
+    data = response.json()
+    assert data["detail"] == "Internal Server Error"
+    assert data["type"] == "Exception"

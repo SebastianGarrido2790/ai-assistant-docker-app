@@ -40,7 +40,7 @@ class GraphState(TypedDict):
     messages: Annotated[list[BaseMessage], add_messages]
 
 
-def build_graph() -> CompiledStateGraph:
+def build_graph(conn: sqlite3.Connection | None = None) -> CompiledStateGraph:
     """
     Constructs and compiles the conversational agent's directed graph.
 
@@ -49,6 +49,10 @@ def build_graph() -> CompiledStateGraph:
     compiles the execution graph with tool capabilities.
 
     The agent autonomously decides when to persist facts or retrieve past knowledge.
+
+    Args:
+        conn: Optional existing SQLite connection for checkpointing. If not
+            provided, a new one will be created.
 
     Returns:
         CompiledGraph: A LangGraph executable graph ready for invocations.
@@ -122,8 +126,10 @@ def build_graph() -> CompiledStateGraph:
     builder.add_edge("tools", "chat")
 
     # Setup persistent memory checkpointing
-    db_path = str(PROJECT_ROOT / "checkpoints.sqlite")
-    conn = sqlite3.connect(db_path, check_same_thread=False)
+    if conn is None:
+        db_path = str(PROJECT_ROOT / "checkpoints.sqlite")
+        conn = sqlite3.connect(db_path, check_same_thread=False)
+
     memory = SqliteSaver(conn)
     memory.setup()
 
