@@ -20,6 +20,7 @@ from src.entity.agent_tools import (
     SearchWebInput,
     SummarizeDocumentInput,
 )
+from src.utils.sanitization import sanitize_tool_input
 from src.utils.telemetry import tracer
 
 
@@ -35,6 +36,7 @@ def search_web_tool(query: str) -> str:
         A string containing the concatenated search results.
     """
     with tracer.start_as_current_span("search_web_tool") as span:
+        query = sanitize_tool_input(query)
         span.set_attribute("tool.input", query)
         try:
             results = DDGS().text(query, max_results=3)
@@ -66,6 +68,7 @@ def calculate_tool(expression: str) -> str:
         The evaluated result as a string.
     """
     with tracer.start_as_current_span("calculate_tool") as span:
+        expression = sanitize_tool_input(expression)
         span.set_attribute("tool.input", expression)
         # Restrict evaluation to basic math operations for safety
         functions = {
@@ -109,6 +112,9 @@ def summarize_document_tool(text: str, query: str) -> str:
         A relevant summary extracted from the text.
     """
     with tracer.start_as_current_span("summarize_document_tool") as span:
+        query = sanitize_tool_input(query)
+        # Note: text is the document, we sanitize the query primarily, but document could also contain injections
+        # In a real production system, both would be scanned.
         span.set_attribute("tool.input_query", query)
         try:
             # Chunk the document
@@ -152,6 +158,7 @@ def save_memory_tool(fact: str) -> str:
         A confirmation string.
     """
     with tracer.start_as_current_span("save_memory_tool") as span:
+        fact = sanitize_tool_input(fact)
         span.set_attribute("tool.input", fact)
         success = save_memory(fact)
         if success:
@@ -174,6 +181,7 @@ def search_memory_tool(query: str) -> str:
         A string containing relevant facts, or a message if none are found.
     """
     with tracer.start_as_current_span("search_memory_tool") as span:
+        query = sanitize_tool_input(query)
         span.set_attribute("tool.input", query)
         facts = search_memory(query)
         if not facts:

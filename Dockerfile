@@ -12,7 +12,10 @@ RUN uv sync --frozen --no-dev
 
 # Stage 2: runtime
 FROM python:3.12-slim AS runtime
-RUN adduser --disabled-password appuser
+RUN apt-get update && apt-get upgrade -y && \
+    apt-get install -y --no-install-recommends ca-certificates && \
+    rm -rf /var/lib/apt/lists/* && \
+    adduser --disabled-password appuser
 WORKDIR /app
 COPY --from=builder /app/.venv ./.venv
 COPY src/ ./src/

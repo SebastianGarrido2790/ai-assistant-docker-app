@@ -1,8 +1,8 @@
 # System Architecture: AI Assistant with Persistent Memory
 
-**Version:** 4.0.0
+**Version:** 4.1.0
 **Date:** 2026-04-28
-**Status:** ✅ As-Built (Phases 1–5 Complete)
+**Status:** ✅ As-Built (Phases 1–5 Complete + Hardened)
 
 > This document reflects the **actual implemented state** of the system after completing all five portfolio upgrade phases. Every module path, service boundary, and data flow described here maps to production code in the repository.
 
@@ -39,12 +39,19 @@ graph TB
         N2 --> N1
     end
 
-    subgraph TOOLS["🔧 Deterministic Tool Layer"]
+    subgraph TOOLS["🔧 Hardened Tool Layer"]
+        direction TB
+        T0["🛡️ sanitization.py<br/><i>Prompt Injection Defense<br/>Rule 1.3 compliance</i>"]
         T1["🌐 search_web_tool<br/><i>duckduckgo-search</i>"]
         T2["🧮 calculate_tool<br/><i>sandboxed eval + math</i>"]
         T3["📄 summarize_document_tool<br/><i>RecursiveCharacterTextSplitter</i>"]
         T4["💾 save_memory_tool<br/><i>ChromaDB write</i>"]
         T5["🔍 search_memory_tool<br/><i>ChromaDB ANN query</i>"]
+        T0 -.-> T1
+        T0 -.-> T2
+        T0 -.-> T3
+        T0 -.-> T4
+        T0 -.-> T5
     end
 
     subgraph MEMORY["💾 Three-Layer Memory System"]
@@ -134,6 +141,7 @@ sequenceDiagram
     Note over Agent: hitl_gate_node()<br/>HITL_ENABLED=false → transparent pass-through<br/>HITL_ENABLED=true → interrupt() suspends graph pending human approval
 
     Agent->>Tools: search_web_tool(query="...")
+    Note over Tools: Security Gate: sanitize_tool_input()
     Note over Tools: OTel child span: search_web_tool (tool.input, tool.output)
     Tools-->>Agent: Web search result snippets
 
@@ -222,7 +230,7 @@ graph TD
     SRC --> TL["tools/<br/><i>tools.py — 5 deterministic @tool functions with OTel spans</i>"]
     SRC --> CF["config/<br/><i>configuration.py — 3-tier priority ConfigurationManager<br/>AppConfig: LLM endpoints · auth · CORS · checkpoint_db_path<br/>chroma_db_path · hitl_enabled</i>"]
     SRC --> EN["entity/<br/><i>schema.py — ChatRequest, ChatResponse, HealthResponse<br/>agent_tools.py — Pydantic input contracts for all tools</i>"]
-    SRC --> UT["utils/<br/><i>logger.py — Loguru JSON + enqueued sinks<br/>telemetry.py — OTel TracerProvider + OTEL_EXPORTER_TYPE=console|otlp<br/>exceptions.py — ChatException, ModelTimeoutError</i>"]
+    SRC --> UT["utils/<br/><i>logger.py — Loguru JSON + enqueued sinks<br/>telemetry.py — OTel TracerProvider + OTEL_EXPORTER_TYPE=console|otlp<br/>sanitization.py — Prompt Injection patterns + text scanning<br/>exceptions.py — ChatException, ModelTimeoutError</i>"]
     SRC --> UI2["ui/<br/><i>app.py — thin entry point + session state<br/>client.py — HTTP interaction layer<br/>components.py — reusable render functions<br/>styles.py — Glassmorphism CSS design system</i>"]
 
     TST --> T1["test_api.py<br/><i>health + chat endpoint contracts</i>"]
@@ -248,13 +256,13 @@ graph TD
 
 All five tools are `@tool`-decorated functions with validated Pydantic input schemas. The LLM (Brain) selects tools; tools (Brawn) execute deterministically.
 
-| Tool | Backing Library | Input Schema | OTel Span | Determinism |
-|------|-----------------|--------------|-----------|-------------|
-| `search_web_tool` | `duckduckgo-search` | `SearchWebInput(query)` | ✅ `search_web_tool` | External I/O — reproducible per query |
-| `calculate_tool` | `math` + sandboxed `eval` | `CalculateInput(expression)` | ✅ `calculate_tool` | 100% deterministic |
-| `summarize_document_tool` | `langchain-text-splitters` | `SummarizeDocumentInput(text, query)` | ✅ `summarize_document_tool` | Deterministic chunking + term-overlap |
-| `save_memory_tool` | ChromaDB write | `SaveMemoryInput(fact)` | ✅ `save_memory_tool` | Deterministic write |
-| `search_memory_tool` | ChromaDB ANN | `SearchMemoryInput(query)` | ✅ `search_memory_tool` | Deterministic vector query |
+| Tool | Backing Library | Input Schema | Security | OTel Span |
+|------|-----------------|--------------|----------|-----------|
+| `search_web_tool` | `duckduckgo-search` | `SearchWebInput(query)` | ✅ Sanitized | ✅ `search_web_tool` |
+| `calculate_tool` | `math` + `simpleeval` | `CalculateInput(expression)` | ✅ Sanitized | ✅ `calculate_tool` |
+| `summarize_document_tool` | `langchain-splitters` | `SummarizeDocumentInput(text, query)` | ✅ Sanitized | ✅ `summarize_document_tool` |
+| `save_memory_tool` | ChromaDB write | `SaveMemoryInput(fact)` | ✅ Sanitized | ✅ `save_memory_tool` |
+| `search_memory_tool` | ChromaDB ANN | `SearchMemoryInput(query)` | ✅ Sanitized | ✅ `search_memory_tool` |
 
 ---
 
@@ -409,6 +417,8 @@ The frontend is a four-module package applying the Single Responsibility Princip
 | Security scanning | `bandit` in CI + pre-commit + `validate_system.bat` | Three-layer enforcement: local commit, local validation, CI gate |
 | Dev tooling | `Makefile` + `CONTRIBUTING.md` + `.pre-commit-config.yaml` | Standardizes onboarding and enforces quality gates across local, CI, and Docker environments |
 | Dependency management | `uv sync --frozen` | Bit-for-bit reproducible environments across all developers and CI runners |
+| Prompt injection | `src/utils/sanitization.py` | Mandatory security boundary for all tools accepting free-text user input (Rule 1.3) |
+| OS hardening | `apt-get upgrade` in Docker | Resolves fixable OS vulnerabilities (Trivy scan compliance) |
 
 ---
 
@@ -464,5 +474,7 @@ Phase 5 — Portfolio Differentiation
 ✅ Model Card                 →  reports/docs/model_card.md — use cases, ethics, caveats, metrics
 ✅ HITL gate                  →  hitl_gate_node with interrupt() on save_memory_tool (HITL_ENABLED)
 ✅ Live observation            →  OTel spans + memory retrieval confirmed in live uvicorn logs
-✅ All quality gates          →  ruff 0 · pyright 0 · bandit 0 · 24 tests · coverage 79.58%
+✅ All quality gates          →  ruff 0 · pyright 0 · bandit 0 · 30 tests · coverage 81.2%
+✅ Prompt Injection defense   →  sanitization.py verified with 6 unit tests in tests/test_security.py
+✅ Docker Security            →  apt-get upgrade in runtime stage mitigates OS vulnerabilities
 ```

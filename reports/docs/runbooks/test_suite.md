@@ -87,7 +87,16 @@ This document describes the project's unit testing strategy, establishing the fi
 | `test_render_demo_actions_no_click` | `render_demo_actions` | Returns `None` when no demo button is interacted with. |
 | `test_render_demo_actions_memory_click` | `render_demo_actions` | Returns the correct search prompt when the memory demo is triggered. |
 
-### 3.8 `tests/conftest.py` — Test Infrastructure
+### 3.8 `tests/test_security.py` — Security Hardening
+**Purpose:** Validates the prompt injection defense layer and input safety boundaries.
+
+| Test | Component Tested | What It Proves |
+|---|---|---|
+| `test_sanitization_normal_input` | `sanitize_tool_input` | Legitimate user prompts pass through without modification. |
+| `test_sanitization_truncation` | `sanitize_tool_input` | Inputs exceeding `_MAX_INPUT_LENGTH` (2,000 chars) are safely truncated. |
+| `test_sanitization_prompt_injection` | `sanitize_tool_input` | Malicious patterns (ignore instructions, persona hijacking) are rejected with a `ValueError`. |
+
+### 3.9 `tests/conftest.py` — Test Infrastructure
 **Purpose:** Centralizes shared fixtures and mocks to ensure tests are fast and isolated.
 
 - **Mock Agent Graph:** Prevents real LLM calls and DB side effects.
@@ -120,17 +129,19 @@ uv run pytest --cov=src --cov-fail-under=70
 | `tests/test_exceptions.py` | 1 | 1 | 0 | **PASS** ✅ |
 | `tests/test_memory.py` | 2 | 2 | 0 | **PASS** ✅ |
 | `tests/test_schema.py` | 5 | 5 | 0 | **PASS** ✅ |
+| `tests/test_security.py` | 6 | 6 | 0 | **PASS** ✅ |
 | `tests/test_tools.py` | 5 | 5 | 0 | **PASS** ✅ |
 | `tests/test_ui.py` | 6 | 6 | 0 | **PASS** ✅ |
-| **TOTAL** | **24** | **24** | **0** | **PASS** ✅ |
+| **TOTAL** | **30** | **30** | **0** | **PASS** ✅ |
 
 ```
-tests\test_api.py ...                                                        [ 12%]
-tests\test_configuration.py ..                                               [ 20%]
-tests\test_exceptions.py .                                                   [ 25%]
-tests\test_memory.py ..                                                      [ 33%]
-tests\test_schema.py .....                                                   [ 54%]
-tests\test_tools.py .....                                                    [ 75%]
+tests\test_api.py ...                                                        [ 10%]
+tests\test_configuration.py ..                                               [ 16%]
+tests\test_exceptions.py .                                                   [ 20%]
+tests\test_memory.py ..                                                      [ 26%]
+tests\test_schema.py .....                                                   [ 43%]
+tests\test_security.py ......                                                [ 63%]
+tests\test_tools.py .....                                                    [ 80%]
 tests\test_ui.py ......                                                      [100%]
 
 ================================= tests coverage ==================================
@@ -139,23 +150,23 @@ Name                          Stmts   Miss  Cover
 -------------------------------------------------
 src\agents\graph.py              67     42    37%
 src\agents\memory.py             37      3    92%
-src\agents\prompts.py             2      0   100%
 src\api\app.py                   79      7    91%
 src\config\configuration.py      31      2    94%
 src\constants.py                  5      0   100%
 src\entity\agent_tools.py        12      0   100%
 src\entity\schema.py             13      0   100%
-src\tools\tools.py               83      6    93%
+src\tools\tools.py               89      6    93%
 src\ui\client.py                 18      0   100%
 src\ui\components.py             25      7    72%
 src\utils\exceptions.py           4      0   100%
 src\utils\logger.py              15      0   100%
+src\utils\sanitization.py        15      1    93%
 src\utils\telemetry.py           17      2    88%
 -------------------------------------------------
-TOTAL                           426     87    80%
-Required test coverage of 70% reached. Total coverage: 79.58%
+TOTAL                           447     88    80%
+Required test coverage of 70% reached. Total coverage: 80.31%
 
-========================= 24 passed in 21.70s =================================
+========================= 30 passed in 21.40s =================================
 ```
 
 > **Note:** `src/agents/graph.py` shows 37% coverage — this is expected. The `build_graph()` function is mocked at the API layer via `conftest.py` to avoid real LLM/DB side effects. The graph node logic (`chat_node`, `hitl_gate_node`) is validated through integration testing. `src/ui/app.py` and `src/ui/styles.py` are Streamlit entry-point modules; their direct execution branches are not unit-testable in a headless environment.
@@ -180,6 +191,7 @@ graph TD
         TT["test_tools.py"]
         TM["test_memory.py"]
         TU["test_ui.py"]
+        TY["test_security.py"]
     end
 
     TS --> CR
@@ -191,6 +203,7 @@ graph TD
     TT --> TL["Tools (calculate, search, etc.)"]
     TM --> DB["Memory (ChromaDB)"]
     TU --> BC["BackendClient"]
+    TY --> SZ["Security (Sanitization)"]
 ```
 
 ---
