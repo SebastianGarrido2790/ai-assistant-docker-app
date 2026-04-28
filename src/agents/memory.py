@@ -5,6 +5,7 @@ Leverages ChromaDB to persist user facts across multiple disconnected sessions,
 forming the third layer of the 3-Layer Memory Architecture.
 """
 
+import os
 import uuid
 
 import chromadb
@@ -16,8 +17,9 @@ from src.utils.logger import get_logger
 
 logger = get_logger(__name__)
 
-# Initialize ChromaDB persistent client
-CHROMA_DB_PATH = str(PROJECT_ROOT / "chroma_db")
+# Initialize ChromaDB persistent client.
+# Path is configurable via CHROMA_DB_PATH env var (matches AppConfig.chroma_db_path).
+CHROMA_DB_PATH = os.environ.get("CHROMA_DB_PATH", str(PROJECT_ROOT / "chroma_db"))
 chroma_client = chromadb.PersistentClient(path=CHROMA_DB_PATH)
 
 # Use a default collection for user memory facts

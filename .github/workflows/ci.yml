@@ -39,6 +39,8 @@ jobs:
         run: uv run ruff format --check
       - name: Pyright Typecheck
         run: uv run pyright
+      - name: Bandit Security Scan
+        run: uv run bandit -r src/ -ll
 
   test:
     name: Unit Tests

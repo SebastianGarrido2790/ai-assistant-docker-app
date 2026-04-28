@@ -39,7 +39,7 @@ class BackendClient:
         }
         headers = {"X-API-Key": APP_API_KEY}
         try:
-            res = requests.post(API_URL, json=payload, headers=headers)
+            res = requests.post(API_URL, json=payload, headers=headers, timeout=60)
             res.raise_for_status()
             data = res.json()
             return data.get("response", "Error: No response from API.")

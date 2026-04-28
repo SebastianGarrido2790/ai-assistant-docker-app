@@ -25,6 +25,9 @@ def mock_app_config() -> AppConfig:
         remote_base_url="https://test-remote-url",
         app_api_key="test-app-key",
         allowed_origins=["*"],
+        checkpoint_db_path=":memory:",
+        chroma_db_path="/tmp/test-chroma",
+        hitl_enabled=False,
     )
 
 

@@ -1,10 +1,10 @@
 # System Architecture: AI Assistant with Persistent Memory
 
-**Version:** 3.0.0
-**Date:** 2026-04-24
-**Status:** ✅ As-Built (Phases 1–3 Complete)
+**Version:** 4.0.0
+**Date:** 2026-04-28
+**Status:** ✅ As-Built (Phases 1–5 Complete)
 
-> This document reflects the **actual implemented state** of the system after completing all three portfolio upgrade phases. Every module path, service boundary, and data flow described here maps to production code in the repository.
+> This document reflects the **actual implemented state** of the system after completing all five portfolio upgrade phases. Every module path, service boundary, and data flow described here maps to production code in the repository.
 
 ---
 
@@ -28,11 +28,13 @@ graph TB
     subgraph AGENT["🧠 LangGraph Agent (StateGraph)"]
         direction TB
         N1["chat_node<br/><i>LLM reasoning + tool selection<br/>Preload Memory Pattern</i>"]
+        HG["hitl_gate_node<br/><i>interrupt() on save_memory_tool<br/>when HITL_ENABLED=true</i>"]
         N2["tool_node<br/><i>ToolNode dispatcher</i>"]
         CE{{"tools_condition<br/><i>conditional edge</i>"}}
 
         N1 --> CE
-        CE -->|"tool_calls in state"| N2
+        CE -->|"tool_calls in state"| HG
+        HG --> N2
         CE -->|"no tool_calls"| END(["__end__"])
         N2 --> N1
     end
@@ -58,12 +60,13 @@ graph TB
     end
 
     subgraph INFRA["🐳 Container Infrastructure"]
-        D1["ai-assistant container<br/><i>multi-stage · non-root appuser</i>"]
+        D1["ai-assistant container<br/><i>multi-stage · non-root appuser<br/>HEALTHCHECK on /v1/health</i>"]
         D2["llm container<br/><i>Docker Model Runner · port 8080</i>"]
+        D3["jaeger container<br/><i>all-in-one · OTLP HTTP :4318<br/>UI :16686</i>"]
     end
 
     subgraph CICD["🔄 CI/CD Pipeline (GitHub Actions)"]
-        C1["quality-gate<br/><i>ruff + pyright</i>"]
+        C1["quality-gate<br/><i>ruff + pyright + bandit</i>"]
         C2["test<br/><i>pytest --cov ≥ 70%</i>"]
         C3["docker-build<br/><i>build + trivy scan · master only</i>"]
         C1 --> C2 --> C3
@@ -126,7 +129,9 @@ sequenceDiagram
     Agent->>LLM: invoke([SystemMessage(prompt + memories) + history])
     LLM-->>Agent: AIMessage with tool_calls=[search_web_tool(...)]
 
-    Note over Agent: tools_condition → tool_calls present → route to tool_node
+    Note over Agent: tools_condition → tool_calls present → route to hitl_gate
+
+    Note over Agent: hitl_gate_node()<br/>HITL_ENABLED=false → transparent pass-through<br/>HITL_ENABLED=true → interrupt() suspends graph pending human approval
 
     Agent->>Tools: search_web_tool(query="...")
     Note over Tools: OTel child span: search_web_tool (tool.input, tool.output)
@@ -199,35 +204,42 @@ graph TD
     subgraph Root["📁 ai-assistant-docker-app/"]
         direction TB
         PC["pyproject.toml<br/><i>ruff · pyright · pytest · uv · security pins</i>"]
-        DC["docker-compose.yaml<br/><i>ai-app · llm services</i>"]
-        DF["Dockerfile<br/><i>multi-stage · non-root appuser</i>"]
-        VS["validate_system.bat<br/><i>4-pillar local CI mirror</i>"]
+        DC["docker-compose.yaml<br/><i>backend · frontend · llm · jaeger services</i>"]
+        DF["Dockerfile<br/><i>multi-stage · non-root appuser · HEALTHCHECK</i>"]
+        MK["Makefile<br/><i>install · lint · typecheck · bandit · test · docker-build · clean</i>"]
+        VS["validate_system.bat<br/><i>4-pillar local CI mirror (Pyright+Ruff+Bandit+Pytest)</i>"]
         LS["launch_system.bat<br/><i>hybrid one-click launcher · --env-file</i>"]
         GH[".github/workflows/ci.yml<br/><i>3-stage GitHub Actions pipeline</i>"]
+        PC2[".pre-commit-config.yaml<br/><i>ruff · pyright · bandit · file hygiene hooks</i>"]
+        CT["CONTRIBUTING.md<br/><i>dev setup · branching · PR workflow · standards</i>"]
         SRC["src/"]
         TST["tests/"]
         RPT["reports/"]
     end
 
-    SRC --> AG["agents/<br/><i>graph.py — StateGraph + ToolNode + Preload Memory<br/>memory.py — ChromaDB PersistentClient<br/>prompts.py — SYSTEM_PROMPT_V1 versioned registry</i>"]
+    SRC --> AG["agents/<br/><i>graph.py — StateGraph + hitl_gate_node + ToolNode + Preload Memory<br/>memory.py — ChromaDB PersistentClient (CHROMA_DB_PATH configurable)<br/>prompts.py — SYSTEM_PROMPT_V1 versioned registry</i>"]
     SRC --> AP["api/<br/><i>app.py — FastAPI lifespan + OTel spans + token metrics</i>"]
     SRC --> TL["tools/<br/><i>tools.py — 5 deterministic @tool functions with OTel spans</i>"]
-    SRC --> CF["config/<br/><i>configuration.py — 3-tier priority ConfigurationManager</i>"]
+    SRC --> CF["config/<br/><i>configuration.py — 3-tier priority ConfigurationManager<br/>AppConfig: LLM endpoints · auth · CORS · checkpoint_db_path<br/>chroma_db_path · hitl_enabled</i>"]
     SRC --> EN["entity/<br/><i>schema.py — ChatRequest, ChatResponse, HealthResponse<br/>agent_tools.py — Pydantic input contracts for all tools</i>"]
-    SRC --> UT["utils/<br/><i>logger.py — Loguru JSON + enqueued sinks<br/>telemetry.py — OTel TracerProvider + BatchSpanProcessor<br/>exceptions.py — ChatException, ModelTimeoutError</i>"]
+    SRC --> UT["utils/<br/><i>logger.py — Loguru JSON + enqueued sinks<br/>telemetry.py — OTel TracerProvider + OTEL_EXPORTER_TYPE=console|otlp<br/>exceptions.py — ChatException, ModelTimeoutError</i>"]
     SRC --> UI2["ui/<br/><i>app.py — thin entry point + session state<br/>client.py — HTTP interaction layer<br/>components.py — reusable render functions<br/>styles.py — Glassmorphism CSS design system</i>"]
 
     TST --> T1["test_api.py<br/><i>health + chat endpoint contracts</i>"]
     TST --> T2["test_tools.py<br/><i>calculate_tool · search_web_tool isolation</i>"]
     TST --> T3["test_memory.py<br/><i>ChromaDB save/search round-trip</i>"]
     TST --> T4["test_schema.py<br/><i>Pydantic model validation</i>"]
-    TST --> T5["test_configuration.py<br/><i>ConfigurationManager priority chain</i>"]
+    TST --> T5["test_configuration.py<br/><i>ConfigurationManager priority chain + Phase 5 fields</i>"]
     TST --> T6["test_exceptions.py<br/><i>custom exception hierarchy</i>"]
+    TST --> T7["test_ui.py<br/><i>BackendClient · session init · component rendering</i>"]
+    TST --> CF2["conftest.py<br/><i>shared fixtures: mock graph · OTel stub · AppConfig with Phase 5 fields</i>"]
 
     RPT --> DA["docs/architecture/<br/><i>system_design.md (this file)</i>"]
-    RPT --> DW["docs/workflows/<br/><i>phase_1/2/3 implementation records</i>"]
-    RPT --> DE["docs/evaluations/<br/><i>portfolio_upgrade_analysis.md</i>"]
-    RPT --> DD["docs/decisions/<br/><i>adr-001-langgraph-vs-langchain.md</i>"]
+    RPT --> DW["docs/workflows/<br/><i>phase_1/2/3/4/5 implementation records</i>"]
+    RPT --> DE["docs/evaluations/<br/><i>codebase_review.md (v1.5 · 10.0/10)</i>"]
+    RPT --> DD["docs/decisions/<br/><i>adr-001-langgraph-vs-langchain.md<br/>portfolio_differentiation.md</i>"]
+    RPT --> DM["docs/<br/><i>model_card.md — intended use · limitations · ethics</i>"]
+    RPT --> DR["docs/runbooks/<br/><i>test_suite.md · verify_app.md</i>"]
 ```
 
 ---
@@ -269,9 +281,9 @@ graph TD
         RS --> CS3
     end
 
-    subgraph EXPORT["📤 Exporters (Swappable)"]
-        CE2["ConsoleSpanExporter<br/><i>current: stdout JSON</i>"]
-        OE["OTLPSpanExporter<br/><i>ready: Jaeger / Tempo / Datadog<br/>(single-line swap in telemetry.py)</i>"]
+    subgraph EXPORT["📤 Exporters (env-var configurable)"]
+        CE2["ConsoleSpanExporter<br/><i>OTEL_EXPORTER_TYPE=console (default)</i>"]
+        OE["OTLPSpanExporter (HTTP/proto)<br/><i>OTEL_EXPORTER_TYPE=otlp<br/>endpoint: OTEL_EXPORTER_OTLP_ENDPOINT<br/>→ Jaeger all-in-one :4318 (docker-compose)</i>"]
     end
 
     API2["src/api/app.py"] -->|"logger.bind(latency_ms, tokens)"| LOG
@@ -296,7 +308,8 @@ graph LR
     subgraph QG["Job 1: quality-gate"]
         R["ruff check<br/>ruff format --check"]
         P["pyright typecheck<br/>(standard mode — 0 errors)"]
-        R --> P
+        BAN["bandit -r src/ -ll<br/>(0 Medium/High findings)"]
+        R --> P --> BAN
     end
 
     subgraph TEST["Job 2: test"]
@@ -344,8 +357,9 @@ graph TD
         R3["COPY src/ ./src/"]
         R4["chown -R appuser:appuser /app"]
         R5["USER appuser"]
-        R6["CMD streamlit run src/ui/app.py<br/>--server.port=8501 --server.address=0.0.0.0"]
-        R1 --> R2 --> R3 --> R4 --> R5 --> R6
+        R6["HEALTHCHECK --interval=30s --timeout=10s<br/><i>urllib.request → /v1/health · stdlib only</i>"]
+        R7["CMD streamlit run src/ui/app.py<br/>--server.port=8501 --server.address=0.0.0.0"]
+        R1 --> R2 --> R3 --> R4 --> R5 --> R6 --> R7
     end
 
     BUILDER -->|".venv only"| RUNTIME
@@ -388,15 +402,19 @@ The frontend is a four-module package applying the Single Responsibility Princip
 | Container strategy | Multi-stage Dockerfile | Layer cache for dev velocity, non-root user, minimal attack surface |
 | UI decoupling | `src/ui/` package (4 modules) | SRP applied to frontend; HTTP client isolated in `client.py`, design system in `styles.py` |
 | Logging | Loguru (`enqueue=True`, `serialize=True`) | Non-blocking async queue; JSON file sink directly ingestible by log aggregators |
-| Tracing | OpenTelemetry `BatchSpanProcessor` | Swappable exporter (Console → OTLP); two-layer span hierarchy per request |
+| Tracing | OTel `BatchSpanProcessor` + `OTEL_EXPORTER_TYPE` | Env-var toggle between console and OTLP; Jaeger all-in-one wired in docker-compose |
 | Config resolution | 3-tier priority chain | Prevents host env var leakage into Docker container (Docker-injected → explicit env → YAML defaults) |
+| Configurable paths | `CHECKPOINT_DB_PATH` + `CHROMA_DB_PATH` env vars | Enables volume mounts and cloud-native persistent storage without code changes |
+| HITL gate | LangGraph `interrupt()` in `hitl_gate_node` | Satisfies Rule 1.6 — irreversible memory writes gate on human approval when `HITL_ENABLED=true` |
+| Security scanning | `bandit` in CI + pre-commit + `validate_system.bat` | Three-layer enforcement: local commit, local validation, CI gate |
+| Dev tooling | `Makefile` + `CONTRIBUTING.md` + `.pre-commit-config.yaml` | Standardizes onboarding and enforces quality gates across local, CI, and Docker environments |
 | Dependency management | `uv sync --frozen` | Bit-for-bit reproducible environments across all developers and CI runners |
 
 ---
 
 ## 11. Validated System State
 
-All acceptance criteria across Phases 1–3 were verified end-to-end:
+All acceptance criteria across Phases 1–5 were verified end-to-end:
 
 ```
 Phase 1 — Foundation Hardening
@@ -429,4 +447,22 @@ Phase 3 — Production Engineering
 ✅ Embedding engine           →  sentence-transformers + onnxruntime pinned; no runtime downloads
 ✅ GitHub Actions pipeline    →  3-stage CI passing on master (quality-gate → test → docker-build)
 ✅ Trivy scan                 →  pillow/urllib3/protobuf security pins resolve HIGH/CRITICAL CVEs
+
+Phase 4 — Developer Experience
+✅ CONTRIBUTING.md            →  Dev setup, branching, PR workflow, code standards documented
+✅ .pre-commit-config.yaml    →  ruff + pyright + bandit + file hygiene hooks installed
+✅ bandit in CI               →  0 Medium/High findings; 1 justified #nosec annotation
+✅ validate_system.bat Pillar 1 →  Bandit step added alongside Pyright and Ruff
+✅ Dead code purged           →  error_message_detail() removed; test count corrected to 24
+
+Phase 5 — Portfolio Differentiation
+✅ Configurable paths         →  CHECKPOINT_DB_PATH + CHROMA_DB_PATH env vars resolve in AppConfig
+✅ OTLP exporter              →  OTEL_EXPORTER_TYPE=otlp routes spans to Jaeger all-in-one :4318
+✅ Jaeger in docker-compose   →  Service added; backend depends_on: jaeger; UI at localhost:16686
+✅ Dockerfile HEALTHCHECK     →  urllib.request → /v1/health — stdlib only, 30s/10s/3 retries
+✅ Makefile                   →  8 targets: install lint typecheck bandit test quality docker-build clean
+✅ Model Card                 →  reports/docs/model_card.md — use cases, ethics, caveats, metrics
+✅ HITL gate                  →  hitl_gate_node with interrupt() on save_memory_tool (HITL_ENABLED)
+✅ Live observation            →  OTel spans + memory retrieval confirmed in live uvicorn logs
+✅ All quality gates          →  ruff 0 · pyright 0 · bandit 0 · 24 tests · coverage 79.58%
 ```

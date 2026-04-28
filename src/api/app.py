@@ -27,7 +27,6 @@ from slowapi.util import get_remote_address
 
 from src.agents.graph import build_graph
 from src.config.configuration import ConfigurationManager
-from src.constants import PROJECT_ROOT
 from src.entity.schema import ChatRequest, ChatResponse, HealthResponse
 from src.utils.logger import get_logger
 from src.utils.telemetry import tracer
@@ -66,7 +65,7 @@ async def lifespan(app: FastAPI):
     logger.info("Initializing Agent Graph and Configuration State...")
 
     # 1. Setup persistent memory checkpointing (managed by app lifecycle)
-    db_path = str(PROJECT_ROOT / "checkpoints.sqlite")
+    db_path = config.checkpoint_db_path
     conn = sqlite3.connect(db_path, check_same_thread=False)
     app.state.db_conn = conn
 
@@ -193,4 +192,4 @@ async def chat(chat_request: ChatRequest, request: Request):
 if __name__ == "__main__":
     import uvicorn
 
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app, host="0.0.0.0", port=8000)  # nosec B104

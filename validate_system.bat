@@ -17,7 +17,7 @@ call uv sync --quiet
 if %ERRORLEVEL% NEQ 0 goto :FAILED
 
 :: Pillar 1: Static Code Quality
-echo [1/4] Pillar 1: Static Code Quality (Pyright ^& Ruff)...
+echo [1/4] Pillar 1: Static Code Quality (Pyright, Ruff ^& Bandit)...
 echo      - Running Pyright (Static Type Checking)...
 call uv run pyright
 if %ERRORLEVEL% NEQ 0 goto :FAILED
@@ -30,6 +30,11 @@ if %ERRORLEVEL% NEQ 0 goto :FAILED
 echo.
 echo      - Running Ruff (Formatting Check)...
 call uv run ruff format --check .
+if %ERRORLEVEL% NEQ 0 goto :FAILED
+
+echo.
+echo      - Running Bandit (Security Scan)...
+call uv run bandit -r src/ -ll
 if %ERRORLEVEL% NEQ 0 goto :FAILED
 
 echo      Done.
