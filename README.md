@@ -262,6 +262,7 @@ ai-assistant-docker-app/
 
 | Document | Description |
 |----------|-------------|
+| [Project Charter](reports/docs/references/project_charter.md) | Original project charter defining goals, scope, and deliverables |
 | [System Design](reports/docs/architecture/system_design.md) | As-built architecture v4.1.0 with 11 Mermaid diagrams |
 | [Test Suite Runbook](reports/docs/runbooks/test_suite.md) | Testing strategy, 30 tests, 80%+ coverage breakdown |
 | [Model Card](reports/docs/model_card.md) | Intended use, limitations, ethics, and performance caveats |
